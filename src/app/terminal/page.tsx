@@ -6,6 +6,15 @@ import socketIOClient from 'socket.io-client';
 import FileExplorer from './components/FileExplorer';
 import CodeEditor from './components/CodeEditor';
 
+// Tab type
+type Tab = {
+  id: string;
+  type: 'file' | 'web';
+  title: string;
+  path?: string; // For file tabs
+  url?: string;  // For web tabs
+};
+
 function TerminalContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -13,9 +22,12 @@ function TerminalContent() {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [tabs, setTabs] = useState<Tab[]>([]);
+  const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [showFileExplorer, setShowFileExplorer] = useState(false);
+  const [showWebViewer, setShowWebViewer] = useState(false);
+  const [webUrl, setWebUrl] = useState('');
   const terminalRef = useRef<HTMLDivElement>(null);
   const terminal = useRef<any>(null);
   const fitAddon = useRef<any>(null);
@@ -172,10 +184,75 @@ function TerminalContent() {
   };
 
   const handleFileSelect = (filePath: string) => {
-    setSelectedFile(filePath);
+    // Check if file is already open
+    const existingTab = tabs.find(tab => tab.type === 'file' && tab.path === filePath);
+    
+    if (existingTab) {
+      // Switch to existing tab
+      setActiveTabId(existingTab.id);
+    } else {
+      // Create new tab
+      const newTab: Tab = {
+        id: `file-${Date.now()}`,
+        type: 'file',
+        title: filePath.split('/').pop() || filePath,
+        path: filePath
+      };
+      
+      setTabs(prev => [...prev, newTab]);
+      setActiveTabId(newTab.id);
+    }
+    
     if (isMobile) {
       setShowFileExplorer(false); // Close drawer on mobile after selecting file
     }
+  };
+
+  const openWebViewer = () => {
+    setShowWebViewer(true);
+  };
+
+  const loadWebPage = () => {
+    if (!webUrl) return;
+    
+    // Check if web page is already open
+    const existingTab = tabs.find(tab => tab.type === 'web' && tab.url === webUrl);
+    
+    if (existingTab) {
+      // Switch to existing tab
+      setActiveTabId(existingTab.id);
+    } else {
+      // Create new tab
+      const newTab: Tab = {
+        id: `web-${Date.now()}`,
+        type: 'web',
+        title: webUrl.replace(/^https?:\/\//, '').split('/')[0],
+        url: webUrl
+      };
+      
+      setTabs(prev => [...prev, newTab]);
+      setActiveTabId(newTab.id);
+    }
+    
+    setShowWebViewer(false);
+    setWebUrl('');
+  };
+
+  const closeTab = (tabId: string) => {
+    setTabs(prev => {
+      const newTabs = prev.filter(tab => tab.id !== tabId);
+      
+      // If we're closing the active tab, switch to another tab
+      if (tabId === activeTabId) {
+        if (newTabs.length > 0) {
+          setActiveTabId(newTabs[newTabs.length - 1].id);
+        } else {
+          setActiveTabId(null);
+        }
+      }
+      
+      return newTabs;
+    });
   };
 
   const handleFileSave = () => {
@@ -235,15 +312,50 @@ function TerminalContent() {
           <div className="h-1/2 flex flex-col">
             <div className="p-2 bg-gray-800 text-sm font-medium flex justify-between items-center">
               <span>Online IDE</span>
-              {!showFileExplorer && (
+              <div className="flex space-x-2">
                 <button 
-                  onClick={toggleFileExplorer}
-                  className="bg-gray-700 hover:bg-gray-600 text-white p-1 rounded"
+                  onClick={openWebViewer}
+                  className="bg-gray-700 hover:bg-gray-600 text-white p-1 rounded text-xs"
                 >
-                  ☰
+                  Web
                 </button>
-              )}
+                {!showFileExplorer && (
+                  <button 
+                    onClick={toggleFileExplorer}
+                    className="bg-gray-700 hover:bg-gray-600 text-white p-1 rounded"
+                  >
+                    ☰
+                  </button>
+                )}
+              </div>
             </div>
+            
+            {/* Tab bar */}
+            {tabs.length > 0 && (
+              <div className="flex bg-gray-800 border-b border-gray-700 overflow-x-auto">
+                {tabs.map(tab => (
+                  <div 
+                    key={tab.id}
+                    className={`flex items-center px-3 py-2 text-sm cursor-pointer border-r border-gray-700 ${
+                      activeTabId === tab.id ? 'bg-gray-700' : 'hover:bg-gray-750'
+                    }`}
+                    onClick={() => setActiveTabId(tab.id)}
+                  >
+                    <span className="mr-2">{tab.type === 'file' ? '📄' : '🌐'}</span>
+                    <span className="truncate max-w-xs">{tab.title}</span>
+                    <button 
+                      className="ml-2 text-gray-400 hover:text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        closeTab(tab.id);
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             
             <div className="flex-1 flex overflow-hidden">
               {showFileExplorer ? (
@@ -262,18 +374,61 @@ function TerminalContent() {
                     <FileExplorer onFileSelect={handleFileSelect} />
                   </div>
                 </div>
-              ) : selectedFile ? (
-                // Code Editor - Full width on mobile
-                <div className="w-full h-full">
-                  <CodeEditor 
-                    filePath={selectedFile} 
-                    onSave={handleFileSave} 
-                  />
+              ) : showWebViewer ? (
+                // Web Viewer Overlay for Mobile
+                <div className="absolute inset-0 z-10 bg-gray-900 flex flex-col">
+                  <div className="p-2 bg-gray-800 text-sm font-medium flex justify-between items-center">
+                    <span>Open Web Page</span>
+                    <button 
+                      onClick={() => setShowWebViewer(false)}
+                      className="bg-gray-700 hover:bg-gray-600 text-white p-1 rounded"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="p-4 flex-1 flex flex-col">
+                    <input
+                      type="text"
+                      value={webUrl}
+                      onChange={(e) => setWebUrl(e.target.value)}
+                      placeholder="Enter URL (e.g., https://example.com)"
+                      className="w-full p-2 mb-4 bg-gray-800 border border-gray-700 rounded text-white"
+                    />
+                    <button
+                      onClick={loadWebPage}
+                      className="self-start px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
+                    >
+                      Open
+                    </button>
+                  </div>
                 </div>
+              ) : activeTabId ? (
+                // Active tab content
+                (() => {
+                  const activeTab = tabs.find(tab => tab.id === activeTabId);
+                  if (!activeTab) return null;
+                  
+                  return activeTab.type === 'file' && activeTab.path ? (
+                    <div className="w-full h-full">
+                      <CodeEditor 
+                        filePath={activeTab.path} 
+                        onSave={handleFileSave} 
+                      />
+                    </div>
+                  ) : activeTab.type === 'web' && activeTab.url ? (
+                    <div className="w-full h-full">
+                      <iframe 
+                        src={activeTab.url} 
+                        className="w-full h-full"
+                        title={activeTab.title}
+                      />
+                    </div>
+                  ) : null;
+                })()
               ) : (
                 // Empty state
                 <div className="flex-1 flex items-center justify-center text-gray-500 w-full">
-                  Select a file to edit
+                  Open a file or webpage to get started
                 </div>
               )}
             </div>
@@ -289,7 +444,7 @@ function TerminalContent() {
             </div>
             <div 
               ref={terminalRef} 
-              className="flex-1 overflow-hidden"
+              className="flex-1 overflow-hidden p-2"
             />
             <div className="border-t border-gray-700 p-2 text-xs text-gray-500">
               {!isConnected && !connectionError && "Connecting to terminal..."}
@@ -303,25 +458,74 @@ function TerminalContent() {
 
           {/* IDE Section - Right (70%) */}
           <div className="w-[70%] flex flex-col">
-            <div className="p-2 bg-gray-800 text-sm font-medium">
-              Online IDE
+            <div className="p-2 bg-gray-800 text-sm font-medium flex justify-between items-center">
+              <span>Online IDE</span>
+              <div className="flex space-x-2">
+                <button 
+                  onClick={openWebViewer}
+                  className="bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                >
+                  Open Web Page
+                </button>
+              </div>
             </div>
+            
+            {/* Tab bar */}
+            {tabs.length > 0 && (
+              <div className="flex bg-gray-800 border-b border-gray-700 overflow-x-auto">
+                {tabs.map(tab => (
+                  <div 
+                    key={tab.id}
+                    className={`flex items-center px-3 py-2 text-sm cursor-pointer border-r border-gray-700 ${
+                      activeTabId === tab.id ? 'bg-gray-700' : 'hover:bg-gray-750'
+                    }`}
+                    onClick={() => setActiveTabId(tab.id)}
+                  >
+                    <span className="mr-2">{tab.type === 'file' ? '📄' : '🌐'}</span>
+                    <span className="truncate max-w-xs">{tab.title}</span>
+                    <button 
+                      className="ml-2 text-gray-400 hover:text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        closeTab(tab.id);
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
             <div className="flex-1 flex overflow-hidden">
               {/* File Explorer - Left side of IDE (30%) */}
               <div className="w-[30%] border-r border-gray-700 flex flex-col">
                 <FileExplorer onFileSelect={handleFileSelect} />
               </div>
               
-              {/* Code Editor - Right side of IDE (70%) */}
+              {/* Tab Content - Right side of IDE (70%) */}
               <div className="w-[70%] flex flex-col">
-                {selectedFile ? (
-                  <CodeEditor 
-                    filePath={selectedFile} 
-                    onSave={handleFileSave} 
-                  />
+                {activeTabId ? (
+                  (() => {
+                    const activeTab = tabs.find(tab => tab.id === activeTabId);
+                    if (!activeTab) return null;
+                    
+                    return activeTab.type === 'file' && activeTab.path ? (
+                      <CodeEditor 
+                        filePath={activeTab.path} 
+                        onSave={handleFileSave} 
+                      />
+                    ) : activeTab.type === 'web' && activeTab.url ? (
+                      <iframe 
+                        src={activeTab.url} 
+                        className="w-full h-full"
+                        title={activeTab.title}
+                      />
+                    ) : null;
+                  })()
                 ) : (
                   <div className="flex-1 flex items-center justify-center text-gray-500">
-                    Select a file to edit
+                    Open a file or webpage to get started
                   </div>
                 )}
               </div>
