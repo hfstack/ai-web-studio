@@ -32,7 +32,7 @@ export class TerminalServer {
       this.sessions.delete(sessionId);
     };
     
-    // node-pty uses the 'onExit' method for handling process exit
+    // node-pty 使用 onExit 方法处理进程退出
     bashProcess.onExit(onExit);
 
     return { sessionId };
@@ -47,6 +47,16 @@ export class TerminalServer {
     if (session) {
       session.process.kill();
       this.sessions.delete(sessionId);
+      return true;
+    }
+    return false;
+  }
+  
+  // Write data to a terminal session
+  writeToSession(sessionId: string, data: string): boolean {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      session.process.write(data);
       return true;
     }
     return false;

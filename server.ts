@@ -1,7 +1,5 @@
 import next from 'next';
 import { createServer } from 'http';
-import { parse } from 'url';
-import { join } from 'path';
 import { Server as SocketServer } from 'socket.io';
 import { TerminalServer } from './src/lib/terminal-server';
 
@@ -30,6 +28,9 @@ app.prepare().then(() => {
   // Create terminal server instance
   const terminalServer = new TerminalServer();
   
+  // Store socket-session mappings
+  const socketToSessionMap = new Map<string, string>();
+  
   // Handle terminal session creation through Socket.IO
   io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
@@ -38,6 +39,18 @@ app.prepare().then(() => {
       try {
         const { projectId } = data;
         const { sessionId } = terminalServer.createSession(projectId);
+        
+        // Map socket to session
+        socketToSessionMap.set(socket.id, sessionId);
+        
+        // Get the session and set up data listener
+        const session = terminalServer.getSession(sessionId);
+        if (session) {
+          session.process.onData((data) => {
+            // Send terminal output to the specific client
+            socket.emit('terminal-output', data);
+          });
+        }
         
         socket.emit('terminal-session-created', { 
           success: true, 
@@ -51,8 +64,37 @@ app.prepare().then(() => {
       }
     });
     
+    // Handle terminal input
+    socket.on('terminal-input', (data) => {
+      const sessionId = socketToSessionMap.get(socket.id);
+      if (sessionId) {
+        terminalServer.writeToSession(sessionId, data);
+      }
+    });
+    
+    // Handle session cleanup
+    socket.on('cleanup-session', (data) => {
+      const { sessionId } = data;
+      if (sessionId) {
+        terminalServer.destroySession(sessionId);
+        // Clean up the mapping
+        for (const [sockId, sessId] of socketToSessionMap.entries()) {
+          if (sessId === sessionId) {
+            socketToSessionMap.delete(sockId);
+            break;
+          }
+        }
+      }
+    });
+    
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id);
+      // Clean up terminal session when client disconnects
+      const sessionId = socketToSessionMap.get(socket.id);
+      if (sessionId) {
+        terminalServer.destroySession(sessionId);
+        socketToSessionMap.delete(socket.id);
+      }
     });
   });
 
