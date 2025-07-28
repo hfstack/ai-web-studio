@@ -13,7 +13,7 @@ export class TerminalServer {
     const sessionId = Math.random().toString(36).substring(2, 15);
     
     // 创建 PTY 终端会话
-    const bashProcess = spawn('bash', [], {
+    const bashProcess = spawn('zsh', [], {
       name: 'xterm-256color',
       cols: 80,
       rows: 30,
