@@ -171,11 +171,34 @@ function TerminalContent() {
     // Cleanup on unmount
     return () => {
       if (newSocket) {
-        if (sessionId) {
-          newSocket.emit('cleanup-session', { sessionId });
+        const currentProjectId = searchParams.get('projectId');
+        if (currentProjectId && sessionId) {
+          // Only cleanup if the session belongs to the current project
+          newSocket.emit('cleanup-session', { sessionId, projectId: currentProjectId });
         }
-        newSocket.close();
+
+        // Remove only the listeners for the current project
+        newSocket.off('connect');
+        newSocket.off('connect_error');
+        newSocket.off('disconnect');
+        newSocket.off('terminal-output');
+        newSocket.off('terminal-session-created');
+
+        // Close the socket only if it belongs to the current project
+        if (currentProjectId) {
+          newSocket.close();
+        }
       }
+
+      // Dispose terminal
+      if (terminal.current) {
+        terminal.current.dispose();
+        terminal.current = null;
+      }
+
+      // Reset socket state for the current project
+      setSocket(null);
+      setIsConnected(false);
     };
   }, []);
 
