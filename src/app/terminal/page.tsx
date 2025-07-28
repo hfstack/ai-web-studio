@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import socketIOClient from 'socket.io-client';
+import FileExplorer from './components/FileExplorer';
+import CodeEditor from './components/CodeEditor';
 
 function TerminalContent() {
   const router = useRouter();
@@ -11,6 +13,7 @@ function TerminalContent() {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
   const terminal = useRef<any>(null);
   const fitAddon = useRef<any>(null);
@@ -152,11 +155,19 @@ function TerminalContent() {
     router.push('/');
   };
 
+  const handleFileSelect = (filePath: string) => {
+    setSelectedFile(filePath);
+  };
+
+  const handleFileSave = () => {
+    // Refresh the file explorer after saving
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-white">
       {/* Header */}
       <header className="bg-gray-800 p-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold">Project Studio Terminal</h1>
+        <h1 className="text-xl font-bold">Project Studio</h1>
         <div className="flex space-x-2">
           <button 
             onClick={handleGoHome}
@@ -168,14 +179,15 @@ function TerminalContent() {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* XTerm.js Terminal */}
-        <div className="flex-1 flex flex-col">
+        {/* Terminal Section - Left (30%) */}
+        <div className="w-[30%] flex flex-col border-r border-gray-700">
+          <div className="p-2 bg-gray-800 text-sm font-medium">
+            Terminal
+          </div>
           <div 
             ref={terminalRef} 
             className="flex-1 overflow-hidden"
           />
-          
-          {/* Connection status */}
           <div className="border-t border-gray-700 p-2 text-xs text-gray-500">
             {!isConnected && !connectionError && "Connecting to terminal..."}
             {connectionError && (
@@ -183,6 +195,33 @@ function TerminalContent() {
                 {connectionError}
               </div>
             )}
+          </div>
+        </div>
+
+        {/* IDE Section - Right (70%) */}
+        <div className="w-[70%] flex flex-col">
+          <div className="p-2 bg-gray-800 text-sm font-medium">
+            Online IDE
+          </div>
+          <div className="flex-1 flex overflow-hidden">
+            {/* File Explorer - Left side of IDE (30%) */}
+            <div className="w-[30%] border-r border-gray-700 flex flex-col">
+              <FileExplorer onFileSelect={handleFileSelect} />
+            </div>
+            
+            {/* Code Editor - Right side of IDE (70%) */}
+            <div className="w-[70%] flex flex-col">
+              {selectedFile ? (
+                <CodeEditor 
+                  filePath={selectedFile} 
+                  onSave={handleFileSave} 
+                />
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-gray-500">
+                  Select a file to edit
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
