@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 
 // 获取项目根目录
-const getProjectRoot = (projectId: string, projectRoot?: string) => {
+const getProjectRoot = (projectRoot?: string) => {
   // 如果提供了 projectRoot 参数，则直接使用
   if (projectRoot) {
     return projectRoot;
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Missing projectId' }, { status: 400 });
     }
     
-    const projectRoot = getProjectRoot(projectId, projectRootParam);
+    const projectRoot = getProjectRoot(projectRootParam);
     const fullPath = path.join(projectRoot, filePath);
     
     // 检查路径是否在项目目录内（安全检查）
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     
-    const projectRoot = getProjectRoot(projectId, projectRootParam);
+    const projectRoot = getProjectRoot(projectRootParam);
     const fullPath = path.join(projectRoot, filePath);
     
     // 检查路径是否在项目目录内（安全检查）
@@ -131,13 +131,13 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('projectId');
     const filePath = searchParams.get('path');
-    const projectRootParam = searchParams.get('projectRoot');
+    const projectRootParam = searchParams.get('projectRoot') || '';
     
     if (!projectId || !filePath) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     
-    const projectRoot = getProjectRoot(projectId, projectRootParam);
+    const projectRoot = getProjectRoot(projectRootParam);
     const fullPath = path.join(projectRoot, filePath);
     
     // 检查路径是否在项目目录内（安全检查）

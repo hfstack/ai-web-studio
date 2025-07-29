@@ -29,6 +29,9 @@ function TerminalContent() {
   const [showWebViewer, setShowWebViewer] = useState(false);
   const [webUrl, setWebUrl] = useState('');
   const [isIdeCollapsed, setIsIdeCollapsed] = useState(false);
+  const [debugCommand, setDebugCommand] = useState('npm run server');
+  const [debugPort, setDebugPort] = useState('3030');
+  const [showDebugConfig, setShowDebugConfig] = useState(false);
   const terminalRef = useRef<HTMLDivElement>(null);
   const terminal = useRef<any>(null);
   const fitAddon = useRef<any>(null);
@@ -241,8 +244,50 @@ function TerminalContent() {
     }
   }, [socket, sessionId, isConnected, searchParams]);
 
+  // Load saved debug settings
+  useEffect(() => {
+    const savedCommand = localStorage.getItem('debugCommand');
+    const savedPort = localStorage.getItem('debugPort');
+    
+    if (savedCommand) setDebugCommand(savedCommand);
+    if (savedPort) setDebugPort(savedPort);
+  }, []);
+
   const handleGoHome = () => {
     router.push('/');
+  };
+
+  const handleDebugCommand = async () => {
+    try {
+      // Save settings to localStorage
+      localStorage.setItem('debugCommand', debugCommand);
+      localStorage.setItem('debugPort', debugPort);
+      const currentProjectId = searchParams.get('projectId');
+      const projectRoot = localStorage.getItem(currentProjectId || '')?.split('project_')[1] || ''; 
+      const response = await fetch('/api/debug', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          command: debugCommand,
+          port: debugPort,
+          path: projectRoot
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.url) {
+        // Set webUrl and load the web page in our viewer
+        setWebUrl(data.url);
+        loadWebPage();
+      } else {
+        console.error('Failed to run debug command:', data.error);
+      }
+    } catch (error) {
+      console.error('Error running debug command:', error);
+    }
   };
 
   const handleFileSelect = (filePath: string) => {
@@ -347,6 +392,12 @@ function TerminalContent() {
             </button>
           )}
           <button 
+            onClick={() => setShowDebugConfig(!showDebugConfig)}
+            className="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm"
+          >
+            Debug
+          </button>
+          <button 
             onClick={handleGoHome}
             className="bg-gray-700 hover:bg-gray-600 text-white py-1 px-3 rounded text-sm"
           >
@@ -354,6 +405,40 @@ function TerminalContent() {
           </button>
         </div>
       </header>
+
+      {/* Debug Configuration Panel */}
+      {showDebugConfig && (
+        <div className="bg-gray-800 p-4 border-b border-gray-700">
+          <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <label className="block text-sm font-medium mb-1">Command</label>
+              <input
+                type="text"
+                value={debugCommand}
+                onChange={(e) => setDebugCommand(e.target.value)}
+                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-medium mb-1">Port</label>
+              <input
+                type="number"
+                value={debugPort}
+                onChange={(e) => setDebugPort(e.target.value)}
+                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={handleDebugCommand}
+                className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 rounded font-medium"
+              >
+                Run
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isMobile ? (
         // Mobile layout - vertical stack

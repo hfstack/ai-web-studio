@@ -18,10 +18,20 @@ export default function HomePage() {
   const [isCloning, setIsCloning] = useState(false);
   const [cloneError, setCloneError] = useState('');
   const [projects, setProjects] = useState<Project[]>([]);
+  const [debugCommand, setDebugCommand] = useState('npm run serve');
+  const [debugPort, setDebugPort] = useState('3010');
+  const [showDebugConfig, setShowDebugConfig] = useState(false);
 
   // Load projects from localStorage on component mount
   useEffect(() => {
     loadProjects();
+    
+    // Load saved debug settings
+    const savedCommand = localStorage.getItem('debugCommand');
+    const savedPort = localStorage.getItem('debugPort');
+    
+    if (savedCommand) setDebugCommand(savedCommand);
+    if (savedPort) setDebugPort(savedPort);
   }, []);
 
   const loadProjects = () => {
@@ -138,13 +148,83 @@ export default function HomePage() {
     router.push(`/terminal?projectId=${projectId}`);
   };
 
+  // Handle debug command
+  const handleDebugCommand = async () => {
+    try {
+      // Save settings to localStorage
+      localStorage.setItem('debugCommand', debugCommand);
+      localStorage.setItem('debugPort', debugPort);
+      
+      const response = await fetch('/api/debug', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          command: debugCommand,
+          port: debugPort
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.url) {
+        // Open the new page in a new tab
+        window.open(data.url, '_blank');
+      } else {
+        console.error('Failed to run debug command:', data.error);
+      }
+    } catch (error) {
+      console.error('Error running debug command:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4">
       <div className="max-w-4xl w-full space-y-8">
-        <div className="text-center">
+        <div className="text-center relative">
           <h1 className="text-4xl font-bold mb-2">Project Studio</h1>
           <p className="text-gray-400">Create and manage your projects with ease</p>
+          <button 
+            onClick={() => setShowDebugConfig(!showDebugConfig)}
+            className="absolute top-0 right-0 bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm"
+          >
+            Debug
+          </button>
         </div>
+
+        {/* Debug Configuration Panel */}
+        {showDebugConfig && (
+          <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
+            <h2 className="text-2xl font-bold mb-4">Debug Configuration</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Command</label>
+                <input
+                  type="text"
+                  value={debugCommand}
+                  onChange={(e) => setDebugCommand(e.target.value)}
+                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Port</label>
+                <input
+                  type="number"
+                  value={debugPort}
+                  onChange={(e) => setDebugPort(e.target.value)}
+                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <button
+                onClick={handleDebugCommand}
+                className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 rounded font-medium"
+              >
+                Run Debug Command
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Open Project Card */}
