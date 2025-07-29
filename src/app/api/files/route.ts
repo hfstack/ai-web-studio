@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
-import projectsConfig from '@/config/projects';
 
 // 获取项目根目录
-const getProjectRoot = (projectId: string) => {
-  // 从配置文件中获取项目根路径
-  // 在实际应用中，可能需要从数据库获取这些信息
-  return projectsConfig[projectId] || process.cwd();
+const getProjectRoot = (projectId: string, projectRoot?: string) => {
+  // 如果提供了 projectRoot 参数，则直接使用
+  if (projectRoot) {
+    return projectRoot;
+  }
+  
+  // 否则使用当前工作目录作为默认值
+  return process.cwd();
 };
 
 // GET /api/files?projectId=xxx&path=yyy - 获取目录内容或文件内容
@@ -16,12 +19,13 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('projectId');
     const filePath = searchParams.get('path') || '';
+    const projectRootParam = searchParams.get('projectRoot');
     
     if (!projectId) {
       return NextResponse.json({ error: 'Missing projectId' }, { status: 400 });
     }
     
-    const projectRoot = getProjectRoot(projectId);
+    const projectRoot = getProjectRoot(projectId, projectRootParam);
     const fullPath = path.join(projectRoot, filePath);
     
     // 检查路径是否在项目目录内（安全检查）
@@ -70,13 +74,13 @@ export async function GET(request: Request) {
 // POST /api/files - 保存文件
 export async function POST(request: Request) {
   try {
-    const { projectId, path: filePath, content } = await request.json();
+    const { projectId, path: filePath, content, projectRoot: projectRootParam } = await request.json();
     
     if (!projectId || !filePath || content === undefined) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     
-    const projectRoot = getProjectRoot(projectId);
+    const projectRoot = getProjectRoot(projectId, projectRootParam);
     const fullPath = path.join(projectRoot, filePath);
     
     // 检查路径是否在项目目录内（安全检查）
@@ -104,12 +108,13 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('projectId');
     const filePath = searchParams.get('path');
+    const projectRootParam = searchParams.get('projectRoot');
     
     if (!projectId || !filePath) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     
-    const projectRoot = getProjectRoot(projectId);
+    const projectRoot = getProjectRoot(projectId, projectRootParam);
     const fullPath = path.join(projectRoot, filePath);
     
     // 检查路径是否在项目目录内（安全检查）
