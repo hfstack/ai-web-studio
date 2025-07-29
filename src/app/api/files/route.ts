@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
+import projectsConfig from '@/config/projects';
 
 // 获取项目根目录
 const getProjectRoot = (projectId: string) => {
-  // 这里应该根据projectId映射到实际的项目路径
-  // 为了简化示例，我们使用当前工作目录
-  return process.cwd();
+  // 从配置文件中获取项目根路径
+  // 在实际应用中，可能需要从数据库获取这些信息
+  return projectsConfig[projectId] || process.cwd();
 };
 
 // GET /api/files?projectId=xxx&path=yyy - 获取目录内容或文件内容
