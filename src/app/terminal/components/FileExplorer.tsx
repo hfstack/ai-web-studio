@@ -29,8 +29,12 @@ export default function FileExplorer({
     try {
       setLoading(true);
       setError(null);
+      console.log('fetchDirectory', projectId, path);
       
-      const response = await fetch(`/api/files?projectId=${projectId}&path=${encodeURIComponent(path)}`);
+      // 从 localStorage 获取 projectRoot
+      const projectRoot = localStorage.getItem(`project_${projectId}`) || '';
+      
+      const response = await fetch(`/api/files?projectId=${projectId}&path=${encodeURIComponent(path)}${projectRoot ? `&projectRoot=${encodeURIComponent(projectRoot)}` : ''}`);
       const data = await response.json();
       
       if (!response.ok) {
@@ -64,8 +68,11 @@ export default function FileExplorer({
     }
     
     try {
+      // 从 localStorage 获取 projectRoot
+      const projectRoot = localStorage.getItem(`project_${projectId}_root`) || '';
+      
       const response = await fetch(
-        `/api/files?projectId=${projectId}&path=${encodeURIComponent(itemPath)}`,
+        `/api/files?projectId=${projectId}&path=${encodeURIComponent(itemPath)}${projectRoot ? `&projectRoot=${encodeURIComponent(projectRoot)}` : ''}`,
         { method: 'DELETE' }
       );
       

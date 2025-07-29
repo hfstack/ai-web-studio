@@ -88,7 +88,10 @@ export default function CodeEditor({
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`/api/files?projectId=${projectId}&path=${encodeURIComponent(filePath)}`);
+      // 从 localStorage 获取 projectRoot
+      const projectRoot = localStorage.getItem(`project_${projectId}_root`) || '';
+      
+      const response = await fetch(`/api/files?projectId=${projectId}&path=${encodeURIComponent(filePath)}${projectRoot ? `&projectRoot=${encodeURIComponent(projectRoot)}` : ''}`);
       const data = await response.json();
       
       if (!response.ok) {
@@ -112,6 +115,9 @@ export default function CodeEditor({
     try {
       setSaving(true);
       
+      // 从 localStorage 获取 projectRoot
+      const projectRoot = localStorage.getItem(`project_${projectId}_root`) || '';
+      
       const response = await fetch('/api/files', {
         method: 'POST',
         headers: {
@@ -120,7 +126,8 @@ export default function CodeEditor({
         body: JSON.stringify({
           projectId,
           path: filePath,
-          content
+          content,
+          projectRoot
         })
       });
       
