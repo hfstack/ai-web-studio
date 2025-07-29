@@ -71,8 +71,9 @@ export default function HomePage() {
     // Generate a default projectId
     const projectId = generateProjectId();
     
-    // Store the project root path in localStorage (defaulting to '/')
-    localStorage.setItem(`project_${projectId}_root`, '/');
+    // Store the project root path in localStorage (using home directory instead of root)
+    const homeDir = typeof process !== 'undefined' ? process.env.HOME || process.env.USERPROFILE || '/' : '/';
+    localStorage.setItem(`project_${projectId}_root`, homeDir);
     
     // Navigate to terminal with the default project
     router.push(`/terminal?projectId=${projectId}`);

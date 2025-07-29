@@ -38,23 +38,46 @@ export async function GET(request: Request) {
     if (stats.isDirectory()) {
       // 返回目录内容
       const items = await fs.readdir(fullPath);
+      
+      // 过滤掉系统文件和隐藏文件，特别是根目录下的敏感文件
+      const filteredItems = items.filter(item => {
+        // 过滤掉以 . 开头的隐藏文件（除了 ..）
+        if (item.startsWith('.') && item !== '..') {
+          return false;
+        }
+        // 特别过滤掉根目录下的一些系统文件
+        if (fullPath === '/' && (item === 'Volumes' || item === 'private' || item === ' cores')) {
+          return false;
+        }
+        return true;
+      });
+      
       const contents = await Promise.all(
-        items.map(async (item) => {
+        filteredItems.map(async (item) => {
           const itemPath = path.join(fullPath, item);
-          const itemStats = await fs.stat(itemPath);
-          return {
-            name: item,
-            isDirectory: itemStats.isDirectory(),
-            size: itemStats.size,
-            modified: itemStats.mtime
-          };
+          try {
+            const itemStats = await fs.stat(itemPath);
+            return {
+              name: item,
+              isDirectory: itemStats.isDirectory(),
+              size: itemStats.size,
+              modified: itemStats.mtime
+            };
+          } catch (error) {
+            // 如果无法获取文件信息，跳过该文件
+            console.warn(`Could not stat file: ${itemPath}`, error);
+            return null;
+          }
         })
       );
+      
+      // 过滤掉 null 值（stat 失败的文件）
+      const validContents = contents.filter(item => item !== null);
       
       return NextResponse.json({ 
         path: filePath,
         isDirectory: true,
-        contents 
+        contents: validContents
       });
     } else {
       // 返回文件内容
