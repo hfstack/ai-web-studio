@@ -325,6 +325,13 @@ function TerminalContent() {
     setShowFileExplorer(!showFileExplorer);
   };
 
+  const handleCtrlC = () => {
+    if (socket && isConnected && sessionId) {
+      // Send Ctrl+C character (ASCII 3) to the terminal
+      socket.emit('terminal-input', '\x03');
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-white">
       {/* Header */}
@@ -360,13 +367,22 @@ function TerminalContent() {
               ref={terminalRef} 
               className="flex-1 overflow-hidden p-2"
             />
-            <div className="border-t border-gray-700 p-2 text-xs text-gray-500">
-              {!isConnected && !connectionError && "Connecting to terminal..."}
-              {connectionError && (
-                <div className="bg-red-900 text-red-200 p-2 rounded">
-                  {connectionError}
-                </div>
-              )}
+            <div className="border-t border-gray-700 p-2 text-xs text-gray-500 flex justify-between items-center">
+              <div>
+                {!isConnected && !connectionError && "Connecting to terminal..."}
+                {connectionError && (
+                  <div className="bg-red-900 text-red-200 p-2 rounded">
+                    {connectionError}
+                  </div>
+                )}
+              </div>
+              <button 
+                onClick={handleCtrlC}
+                disabled={!isConnected || !sessionId}
+                className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+              >
+                ⌃C
+              </button>
             </div>
           </div>
 
@@ -518,13 +534,22 @@ function TerminalContent() {
               ref={terminalRef} 
               className="flex-1 overflow-hidden p-2"
             />
-            <div className="border-t border-gray-700 p-2 text-xs text-gray-500">
-              {!isConnected && !connectionError && "Connecting to terminal..."}
-              {connectionError && (
-                <div className="bg-red-900 text-red-200 p-2 rounded">
-                  {connectionError}
-                </div>
-              )}
+            <div className="border-t border-gray-700 p-2 text-xs text-gray-500 flex justify-between items-center">
+              <div>
+                {!isConnected && !connectionError && "Connecting to terminal..."}
+                {connectionError && (
+                  <div className="bg-red-900 text-red-200 p-2 rounded">
+                    {connectionError}
+                  </div>
+                )}
+              </div>
+              <button 
+                onClick={handleCtrlC}
+                disabled={!isConnected || !sessionId}
+                className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+              >
+                ⌃C
+              </button>
             </div>
           </div>
 
