@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('projectId');
     const filePath = searchParams.get('path') || '';
-    const projectRootParam = searchParams.get('projectRoot');
+    const projectRootParam = searchParams.get('projectRoot') || '';
     
     if (!projectId) {
       return NextResponse.json({ error: 'Missing projectId' }, { status: 400 });
