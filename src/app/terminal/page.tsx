@@ -51,7 +51,7 @@ function TerminalContent() {
     let isMounted = true;
 
     const initTerminal = async () => {
-      if (!terminalRef.current || terminal.current) return;
+      if (!terminalRef.current) return;
 
       // Dynamic imports for client-side only
       const { Terminal } = await import('@xterm/xterm');
@@ -60,31 +60,30 @@ function TerminalContent() {
 
       if (!isMounted) return;
 
-      // Create terminal instance
-      terminal.current = new Terminal({
-        rows: 30,
-        theme: {
-          background: '#1a202c', // gray-900
-          foreground: '#e2e8f0', // gray-200
-        },
-      });
+      // Create terminal instance if it doesn't exist
+      if (!terminal.current) {
+        terminal.current = new Terminal({
+          rows: 30,
+          theme: {
+            background: '#1a202c', // gray-900
+            foreground: '#e2e8f0', // gray-200
+          },
+        });
 
-      // Add fit addon
-      fitAddon.current = new FitAddon();
-      terminal.current.loadAddon(fitAddon.current);
+        // Add fit addon
+        fitAddon.current = new FitAddon();
+        terminal.current.loadAddon(fitAddon.current);
+      }
 
-      // Open terminal in container
-      terminal.current.open(terminalRef.current!);
+      // Open terminal in container if not already opened
+      if (!terminal.current.element) {
+        terminal.current.open(terminalRef.current!);
+      }
 
       // Fit terminal to container
-      fitAddon.current.fit();
-
-      // Handle terminal input
-      terminal.current.onData((data: string) => {
-        if (socket && isConnected) {
-          socket.emit('terminal-input', data);
-        }
-      });
+      if (fitAddon.current) {
+        fitAddon.current.fit();
+      }
     };
 
     initTerminal();
@@ -101,16 +100,31 @@ function TerminalContent() {
     return () => {
       isMounted = false;
       window.removeEventListener('resize', handleResize);
-
-      // Dispose terminal
-      if (terminal.current) {
-        terminal.current.dispose();
-      }
     };
-  }, [socket, isConnected]);
+  }, []);
+
+  // Handle terminal input
+  useEffect(() => {
+    if (!terminal.current || !socket || !isConnected) return;
+
+    // Handle terminal input
+    const dataListener = terminal.current.onData((data: string) => {
+      if (socket && isConnected) {
+        socket.emit('terminal-input', data);
+      }
+    });
+
+    // Cleanup listener
+    return () => {
+      dataListener.dispose();
+    };
+  }, [socket, isConnected, terminal.current]);
 
   // Initialize terminal and socket connection
   useEffect(() => {
+    // Only initialize if we don't already have a socket
+    if (socket) return;
+    
     // Initialize Socket.IO connection
     const newSocket = socketIOClient({
       path: '/api/socket',
@@ -167,10 +181,19 @@ function TerminalContent() {
       }
     });
     
+    // Handle session errors
+    newSocket.on('session-error', (data) => {
+      console.error('Session error:', data.message);
+      setConnectionError(data.message);
+      // Reset session so it can be recreated
+      setSessionId(null);
+    });
+    
     setSocket(newSocket);
     
-    // Cleanup on unmount
+    // Return cleanup function
     return () => {
+      // Clean up only when component unmounts
       if (newSocket) {
         const currentProjectId = searchParams.get('projectId');
         if (currentProjectId && sessionId) {
@@ -178,30 +201,30 @@ function TerminalContent() {
           newSocket.emit('cleanup-session', { sessionId, projectId: currentProjectId });
         }
 
-        // Remove only the listeners for the current project
+        // Remove listeners
         newSocket.off('connect');
         newSocket.off('connect_error');
         newSocket.off('disconnect');
         newSocket.off('terminal-output');
         newSocket.off('terminal-session-created');
+        newSocket.off('session-error');
 
-        // Close the socket only if it belongs to the current project
-        if (currentProjectId) {
-          newSocket.close();
-        }
+        // Close the socket
+        newSocket.close();
       }
-
-      // Dispose terminal
-      if (terminal.current) {
-        terminal.current.dispose();
-        terminal.current = null;
-      }
-
-      // Reset socket state for the current project
-      setSocket(null);
-      setIsConnected(false);
     };
-  }, []);
+  }, []); // Empty dependency array to run only once
+
+  // Reconnect when navigating back to the page with an existing socket but no session
+  useEffect(() => {
+    if (socket && !sessionId && isConnected) {
+      // Create a new terminal session
+      socket.emit('create-terminal-session', {
+        projectId: searchParams.get('projectId'),
+        path: searchParams.get('path') || '/'
+      });
+    }
+  }, [socket, sessionId, isConnected, searchParams]);
 
   const handleGoHome = () => {
     router.push('/');

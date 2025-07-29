@@ -37,6 +37,15 @@ app.prepare().then(() => {
     socket.on('create-terminal-session', (data) => {
       try {
         const { projectId, path } = data;
+        
+        // Check if there's already a session for this socket
+        const existingSessionId = socketToSessionMap.get(socket.id);
+        if (existingSessionId) {
+          // If there's an existing session, destroy it first
+          terminalServer.destroySession(existingSessionId);
+          socketToSessionMap.delete(socket.id);
+        }
+        
         const { sessionId } = terminalServer.createSession(projectId, path);
         
         // Map socket to session
@@ -56,9 +65,10 @@ app.prepare().then(() => {
           sessionId 
         });
       } catch (error) {
+        console.error('Error creating terminal session:', error);
         socket.emit('terminal-session-created', { 
           success: false, 
-          error: 'Failed to create terminal session' 
+          error: 'Failed to create terminal session: ' + (error as Error).message
         });
       }
     });
@@ -67,7 +77,17 @@ app.prepare().then(() => {
     socket.on('terminal-input', (data) => {
       const sessionId = socketToSessionMap.get(socket.id);
       if (sessionId) {
-        terminalServer.writeToSession(sessionId, data);
+        const success = terminalServer.writeToSession(sessionId, data);
+        // If writing fails, it means the session is dead, so notify the client
+        if (!success) {
+          socket.emit('session-error', { 
+            message: 'Terminal session has ended. Please refresh the page.' 
+          });
+        }
+      } else {
+        socket.emit('session-error', { 
+          message: 'No active terminal session. Please refresh the page.' 
+        });
       }
     });
     

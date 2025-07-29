@@ -44,7 +44,11 @@ export class TerminalServer {
   destroySession(sessionId: string): boolean {
     const session = this.sessions.get(sessionId);
     if (session) {
-      session.process.kill();
+      try {
+        session.process.kill();
+      } catch (error) {
+        console.error('Error killing terminal process:', error);
+      }
       this.sessions.delete(sessionId);
       return true;
     }
@@ -55,8 +59,15 @@ export class TerminalServer {
   writeToSession(sessionId: string, data: string): boolean {
     const session = this.sessions.get(sessionId);
     if (session) {
-      session.process.write(data);
-      return true;
+      try {
+        session.process.write(data);
+        return true;
+      } catch (error) {
+        console.error('Error writing to terminal process:', error);
+        // If writing fails, the session might be dead, so clean it up
+        this.destroySession(sessionId);
+        return false;
+      }
     }
     return false;
   }
