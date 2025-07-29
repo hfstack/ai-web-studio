@@ -1,7 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+
+type Project = {
+  id: string;
+  path: string;
+  name: string;
+  lastAccessed: number;
+};
 
 export default function HomePage() {
   const router = useRouter();
@@ -10,6 +17,35 @@ export default function HomePage() {
   const [clonePath, setClonePath] = useState('');
   const [isCloning, setIsCloning] = useState(false);
   const [cloneError, setCloneError] = useState('');
+  const [projects, setProjects] = useState<Project[]>([]);
+
+  // Load projects from localStorage on component mount
+  useEffect(() => {
+    loadProjects();
+  }, []);
+
+  const loadProjects = () => {
+    const projectList: Project[] = [];
+    
+    // Iterate through localStorage to find project entries
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('project_')) {
+        const path = (localStorage.getItem(key) || '').split('project_')[1] || '';
+        
+        projectList.push({
+          id: key,
+          path: path,
+          name: path.split('/').pop() || path,
+          lastAccessed: Date.now() // In a real app, you might store and retrieve this
+        });
+      }
+    }
+    
+    // Sort by last accessed (newest first)
+    projectList.sort((a, b) => b.lastAccessed - a.lastAccessed);
+    setProjects(projectList);
+  };
 
   const generateProjectId = () => `project_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
@@ -18,10 +54,15 @@ export default function HomePage() {
       // Get or create projectId for this path
       const projectId = localStorage.getItem(`project_${projectPath}`) || generateProjectId();
       localStorage.setItem(`project_${projectPath}`, projectId);
+      localStorage.setItem(`project_${projectId}_root`, projectPath);
       
       // Pass projectId and path to terminal
       router.push(`/terminal?path=${encodeURIComponent(projectPath)}&projectId=${projectId}&action=open`);
     }
+  };
+
+  const handleOpenRecentProject = (project: Project) => {
+    router.push(`/terminal?path=${encodeURIComponent(project.path)}&projectId=${project.id}&action=open`);
   };
 
   const handleCloneProject = async () => {
@@ -53,7 +94,8 @@ export default function HomePage() {
         }
         
         // Store the project path in localStorage
-        localStorage.setItem(projectId, `project_${data.path}`);
+        localStorage.setItem(`project_${data.path}`, projectId);
+        localStorage.setItem(`project_${projectId}_root`, data.path);
         
         // Redirect to terminal with the cloned project
         router.push(`/terminal?path=${encodeURIComponent(data.path)}&projectId=${projectId}&action=open`);
@@ -81,7 +123,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4">
-      <div className="max-w-2xl w-full space-y-8">
+      <div className="max-w-4xl w-full space-y-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold mb-2">Project Studio</h1>
           <p className="text-gray-400">Create and manage your projects with ease</p>
@@ -171,6 +213,28 @@ export default function HomePage() {
             </button>
           </div>
         </div>
+
+        {/* Recent Projects Section */}
+        {projects.length > 0 && (
+          <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
+            <h2 className="text-2xl font-bold mb-4">Recent Projects</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {projects.map((project) => (
+                <div 
+                  key={project.id}
+                  className="bg-gray-700 rounded p-4 hover:bg-gray-600 cursor-pointer transition-colors"
+                  onClick={() => handleOpenRecentProject(project)}
+                >
+                  <div className="font-medium">{project.id}</div>
+                  <div className="text-sm text-gray-400 truncate">{project.name}</div>
+                  <div className="text-xs text-gray-500 mt-2">
+                    Last accessed: {new Date(project.lastAccessed).toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
