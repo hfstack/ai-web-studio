@@ -68,7 +68,14 @@ export default function HomePage() {
 
   // Add a function to create a default terminal
   const handleDefaultTerminal = () => {
-    router.push('/terminal');
+    // Generate a default projectId
+    const projectId = generateProjectId();
+    
+    // Store the project root path in localStorage (defaulting to '/')
+    localStorage.setItem(`project_${projectId}_root`, '/');
+    
+    // Navigate to terminal with the default project
+    router.push(`/terminal?projectId=${projectId}`);
   };
 
   return (
