@@ -28,6 +28,7 @@ function TerminalContent() {
   const [showFileExplorer, setShowFileExplorer] = useState(false);
   const [showWebViewer, setShowWebViewer] = useState(false);
   const [webUrl, setWebUrl] = useState('');
+  const [isIdeCollapsed, setIsIdeCollapsed] = useState(false);
   const terminalRef = useRef<HTMLDivElement>(null);
   const terminal = useRef<any>(null);
   const fitAddon = useRef<any>(null);
@@ -45,6 +46,30 @@ function TerminalContent() {
       window.removeEventListener('resize', checkIsMobile);
     };
   }, []);
+
+  // Handle terminal resizing when window or layout changes
+  useEffect(() => {
+    const handleResize = () => {
+      if (fitAddon.current && terminal.current) {
+        // Small delay to ensure DOM has updated
+        setTimeout(() => {
+          try {
+            fitAddon.current.fit();
+          } catch (e) {
+            console.warn('Failed to resize terminal:', e);
+          }
+        }, 100);
+      }
+    };
+
+    handleResize(); // Resize immediately when component mounts or layout state changes
+    
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isIdeCollapsed, isMobile]); // Depend on layout-changing states
 
   // Dynamically import xterm only on client side
   useEffect(() => {
@@ -88,18 +113,8 @@ function TerminalContent() {
 
     initTerminal();
 
-    // Handle window resize
-    const handleResize = () => {
-      if (fitAddon.current) {
-        fitAddon.current.fit();
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-
     return () => {
       isMounted = false;
-      window.removeEventListener('resize', handleResize);
     };
   }, []);
 
@@ -337,7 +352,7 @@ function TerminalContent() {
         // Mobile layout - vertical stack
         <div className="flex flex-col flex-1 overflow-auto">
           {/* Terminal Section - Top */}
-          <div className="h-1/3 flex flex-col border-b border-gray-700">
+          <div className={`${isIdeCollapsed ? 'h-5/6' : 'h-1/3'} flex flex-col border-b border-gray-700`}>
             <div className="p-2 bg-gray-800 text-sm font-medium">
               Terminal
             </div>
@@ -356,10 +371,16 @@ function TerminalContent() {
           </div>
 
           {/* IDE Section - Bottom */}
-          <div className="h-2/3 flex flex-col">
+          <div className={`${isIdeCollapsed ? 'h-10' : 'h-2/3'} flex flex-col`}>
             <div className="p-2 bg-gray-800 text-sm font-medium flex justify-between items-center">
               <span>Online IDE</span>
               <div className="flex space-x-2">
+                <button 
+                  onClick={() => setIsIdeCollapsed(!isIdeCollapsed)}
+                  className="bg-gray-700 hover:bg-gray-600 text-white p-1 rounded text-xs"
+                >
+                  {isIdeCollapsed ? '▼' : '▲'}
+                </button>
                 <button 
                   onClick={openWebViewer}
                   className="bg-gray-700 hover:bg-gray-600 text-white p-1 rounded text-xs"
@@ -377,108 +398,112 @@ function TerminalContent() {
               </div>
             </div>
             
-            {/* Tab bar */}
-            {tabs.length > 0 && (
-              <div className="flex bg-gray-800 border-b border-gray-700 overflow-x-auto">
-                {tabs.map(tab => (
-                  <div 
-                    key={tab.id}
-                    className={`flex items-center px-3 py-2 text-sm cursor-pointer border-r border-gray-700 ${
-                      activeTabId === tab.id ? 'bg-gray-700' : 'hover:bg-gray-750'
-                    }`}
-                    onClick={() => setActiveTabId(tab.id)}
-                  >
-                    <span className="mr-2">{tab.type === 'file' ? '📄' : '🌐'}</span>
-                    <span className="truncate max-w-xs">{tab.title}</span>
-                    <button 
-                      className="ml-2 text-gray-400 hover:text-white"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        closeTab(tab.id);
-                      }}
-                    >
-                      ×
-                    </button>
+            {!isIdeCollapsed && (
+              <>
+                {/* Tab bar */}
+                {tabs.length > 0 && (
+                  <div className="flex bg-gray-800 border-b border-gray-700 overflow-x-auto">
+                    {tabs.map(tab => (
+                      <div 
+                        key={tab.id}
+                        className={`flex items-center px-3 py-2 text-sm cursor-pointer border-r border-gray-700 ${
+                          activeTabId === tab.id ? 'bg-gray-700' : 'hover:bg-gray-750'
+                        }`}
+                        onClick={() => setActiveTabId(tab.id)}
+                      >
+                        <span className="mr-2">{tab.type === 'file' ? '📄' : '🌐'}</span>
+                        <span className="truncate max-w-xs">{tab.title}</span>
+                        <button 
+                          className="ml-2 text-gray-400 hover:text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            closeTab(tab.id);
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )}
+                
+                <div className="flex-1 flex overflow-hidden">
+                  {showFileExplorer ? (
+                    // File Explorer Overlay for Mobile
+                    <div className="absolute inset-0 z-10 bg-gray-900 flex flex-col">
+                      <div className="p-2 bg-gray-800 text-sm font-medium flex justify-between items-center">
+                        <span>File Explorer</span>
+                        <button 
+                          onClick={toggleFileExplorer}
+                          className="bg-gray-700 hover:bg-gray-600 text-white p-1 rounded"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <div className="flex-1 overflow-auto">
+                        <FileExplorer onFileSelect={handleFileSelect} />
+                      </div>
+                    </div>
+                  ) : showWebViewer ? (
+                    // Web Viewer Overlay for Mobile
+                    <div className="absolute inset-0 z-10 bg-gray-900 flex flex-col">
+                      <div className="p-2 bg-gray-800 text-sm font-medium flex justify-between items-center">
+                        <span>Open Web Page</span>
+                        <button 
+                          onClick={() => setShowWebViewer(false)}
+                          className="bg-gray-700 hover:bg-gray-600 text-white p-1 rounded"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <div className="p-4 flex-1 flex flex-col">
+                        <input
+                          type="text"
+                          value={webUrl}
+                          onChange={(e) => setWebUrl(e.target.value)}
+                          placeholder="Enter URL (e.g., https://example.com)"
+                          className="w-full p-2 mb-4 bg-gray-800 border border-gray-700 rounded text-white"
+                        />
+                        <button
+                          onClick={loadWebPage}
+                          className="self-start px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
+                        >
+                          Open
+                        </button>
+                      </div>
+                    </div>
+                  ) : activeTabId ? (
+                    // Active tab content
+                    (() => {
+                      const activeTab = tabs.find(tab => tab.id === activeTabId);
+                      if (!activeTab) return null;
+                      
+                      return activeTab.type === 'file' && activeTab.path ? (
+                        <div className="w-full h-full">
+                          <CodeEditor 
+                            filePath={activeTab.path} 
+                            onSave={handleFileSave} 
+                          />
+                        </div>
+                      ) : activeTab.type === 'web' && activeTab.url ? (
+                        <div className="w-full h-full">
+                          <iframe 
+                            src={activeTab.url} 
+                            className="w-full h-full"
+                            title={activeTab.title}
+                          />
+                        </div>
+                      ) : null;
+                    })()
+                  ) : (
+                    // Empty state
+                    <div className="flex-1 flex items-center justify-center text-gray-500 w-full">
+                      Open a file or webpage to get started
+                    </div>
+                  )}
+                </div>
+              </>
             )}
-            
-            <div className="flex-1 flex overflow-hidden">
-              {showFileExplorer ? (
-                // File Explorer Overlay for Mobile
-                <div className="absolute inset-0 z-10 bg-gray-900 flex flex-col">
-                  <div className="p-2 bg-gray-800 text-sm font-medium flex justify-between items-center">
-                    <span>File Explorer</span>
-                    <button 
-                      onClick={toggleFileExplorer}
-                      className="bg-gray-700 hover:bg-gray-600 text-white p-1 rounded"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div className="flex-1 overflow-auto">
-                    <FileExplorer onFileSelect={handleFileSelect} />
-                  </div>
-                </div>
-              ) : showWebViewer ? (
-                // Web Viewer Overlay for Mobile
-                <div className="absolute inset-0 z-10 bg-gray-900 flex flex-col">
-                  <div className="p-2 bg-gray-800 text-sm font-medium flex justify-between items-center">
-                    <span>Open Web Page</span>
-                    <button 
-                      onClick={() => setShowWebViewer(false)}
-                      className="bg-gray-700 hover:bg-gray-600 text-white p-1 rounded"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div className="p-4 flex-1 flex flex-col">
-                    <input
-                      type="text"
-                      value={webUrl}
-                      onChange={(e) => setWebUrl(e.target.value)}
-                      placeholder="Enter URL (e.g., https://example.com)"
-                      className="w-full p-2 mb-4 bg-gray-800 border border-gray-700 rounded text-white"
-                    />
-                    <button
-                      onClick={loadWebPage}
-                      className="self-start px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
-                    >
-                      Open
-                    </button>
-                  </div>
-                </div>
-              ) : activeTabId ? (
-                // Active tab content
-                (() => {
-                  const activeTab = tabs.find(tab => tab.id === activeTabId);
-                  if (!activeTab) return null;
-                  
-                  return activeTab.type === 'file' && activeTab.path ? (
-                    <div className="w-full h-full">
-                      <CodeEditor 
-                        filePath={activeTab.path} 
-                        onSave={handleFileSave} 
-                      />
-                    </div>
-                  ) : activeTab.type === 'web' && activeTab.url ? (
-                    <div className="w-full h-full">
-                      <iframe 
-                        src={activeTab.url} 
-                        className="w-full h-full"
-                        title={activeTab.title}
-                      />
-                    </div>
-                  ) : null;
-                })()
-              ) : (
-                // Empty state
-                <div className="flex-1 flex items-center justify-center text-gray-500 w-full">
-                  Open a file or webpage to get started
-                </div>
-              )}
-            </div>
           </div>
         </div>
       ) : (
