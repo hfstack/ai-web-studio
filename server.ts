@@ -33,12 +33,11 @@ app.prepare().then(() => {
   
   // Handle terminal session creation through Socket.IO
   io.on('connection', (socket) => {
-    console.log('Client connected:', socket.id);
     
     socket.on('create-terminal-session', (data) => {
       try {
-        const { projectId } = data;
-        const { sessionId } = terminalServer.createSession(projectId);
+        const { projectId, path } = data;
+        const { sessionId } = terminalServer.createSession(projectId, path);
         
         // Map socket to session
         socketToSessionMap.set(socket.id, sessionId);

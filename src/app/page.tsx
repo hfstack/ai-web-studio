@@ -7,6 +7,7 @@ export default function HomePage() {
   const router = useRouter();
   const [projectPath, setProjectPath] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
+  const [clonePath, setClonePath] = useState('');
   const [isCloning, setIsCloning] = useState(false);
   const [cloneError, setCloneError] = useState('');
 
@@ -24,25 +25,44 @@ export default function HomePage() {
   };
 
   const handleCloneProject = async () => {
-    if (githubUrl) {
+    if (githubUrl && clonePath) {
       setIsCloning(true);
       setCloneError('');
       
       try {
-        // Extract repo name from GitHub URL
-        const repoName = githubUrl.split('/').pop()?.replace('.git', '') || 'project';
-        const clonePath = `${process.env.HOME || '/tmp'}/projects/${repoName}`;
-        
-        // Generate and bind projectId to GitHub URL
+        // Generate projectId for this repository
         const projectId = generateProjectId();
-        localStorage.setItem(`project_${githubUrl}`, projectId);
         
-        // Pass projectId, GitHub URL and clone path to terminal
-        router.push(`/terminal?githubUrl=${encodeURIComponent(githubUrl)}&clonePath=${encodeURIComponent(clonePath)}&projectId=${projectId}&action=clone`);
+        // Call the clone API
+        const response = await fetch('/api/clone', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            githubUrl,
+            clonePath,
+            projectId,
+          }),
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Failed to clone repository');
+        }
+        
+        // Store the project path in localStorage
+        localStorage.setItem(projectId, `project_${data.path}`);
+        
+        // Redirect to terminal with the cloned project
+        router.push(`/terminal?path=${encodeURIComponent(data.path)}&projectId=${projectId}&action=open`);
       } catch (error) {
-        setCloneError('Failed to clone repository. Please check the URL and try again.');
+        setCloneError(error instanceof Error ? error.message : 'Failed to clone repository. Please check the URL and try again.');
         setIsCloning(false);
       }
+    } else if (!clonePath) {
+      setCloneError('Please select a storage path for the cloned repository.');
     }
   };
 
@@ -104,14 +124,24 @@ export default function HomePage() {
                   className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Storage Path</label>
+                <input
+                  type="text"
+                  value={clonePath}
+                  onChange={(e) => setClonePath(e.target.value)}
+                  placeholder="/path/to/store/repository"
+                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
               {cloneError && (
                 <div className="text-red-400 text-sm">{cloneError}</div>
               )}
               <button
                 onClick={handleCloneProject}
-                disabled={!githubUrl || isCloning}
+                disabled={!githubUrl || !clonePath || isCloning}
                 className={`w-full py-2 px-4 rounded font-medium ${
-                  githubUrl && !isCloning
+                  githubUrl && clonePath && !isCloning
                     ? 'bg-green-600 hover:bg-green-700' 
                     : 'bg-gray-700 cursor-not-allowed'
                 }`}

@@ -9,15 +9,14 @@ type TerminalSession = {
 export class TerminalServer {
   private sessions: Map<string, TerminalSession> = new Map();
 
-  createSession(projectId: string): { sessionId: string } {
+  createSession(projectId: string, path?: string): { sessionId: string } {
     const sessionId = Math.random().toString(36).substring(2, 15);
-    
     // 创建 PTY 终端会话
     const bashProcess = spawn('zsh', [], {
       name: 'xterm-256color',
       cols: 80,
       rows: 30,
-      cwd: process.cwd(),
+      cwd: path || process.cwd(),
       env: process.env
     });
 

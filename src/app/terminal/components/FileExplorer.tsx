@@ -32,7 +32,7 @@ export default function FileExplorer({
       console.log('fetchDirectory', projectId, path);
       
       // 从 localStorage 获取 projectRoot
-      const projectRoot = localStorage.getItem(`project_${projectId}`) || '';
+      const projectRoot = localStorage.getItem(projectId || '')?.split('project_')[1] || ''; 
       
       const response = await fetch(`/api/files?projectId=${projectId}&path=${encodeURIComponent(path)}${projectRoot ? `&projectRoot=${encodeURIComponent(projectRoot)}` : ''}`);
       const data = await response.json();

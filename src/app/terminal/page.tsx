@@ -127,7 +127,8 @@ function TerminalContent() {
 
       // Create terminal session through Socket.IO
       newSocket.emit('create-terminal-session', {
-        projectId: searchParams.get('projectId')
+        projectId: searchParams.get('projectId'),
+        path: searchParams.get('path') || '/' // 使用URL中的path参数，如果没有则默认为根目录
       });
     });
 
