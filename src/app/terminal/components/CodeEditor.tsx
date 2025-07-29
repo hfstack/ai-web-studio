@@ -89,7 +89,7 @@ export default function CodeEditor({
       setError(null);
       
       // 从 localStorage 获取 projectRoot
-      const projectRoot = localStorage.getItem(`project_${projectId}_root`) || '';
+      const projectRoot = localStorage.getItem(projectId || '')?.split('project_')[1] || '';
       
       const response = await fetch(`/api/files?projectId=${projectId}&path=${encodeURIComponent(filePath)}${projectRoot ? `&projectRoot=${encodeURIComponent(projectRoot)}` : ''}`);
       const data = await response.json();
@@ -116,7 +116,7 @@ export default function CodeEditor({
       setSaving(true);
       
       // 从 localStorage 获取 projectRoot
-      const projectRoot = localStorage.getItem(`project_${projectId}_root`) || '';
+      const projectRoot = localStorage.getItem(projectId || '')?.split('project_')[1] || '';
       
       const response = await fetch('/api/files', {
         method: 'POST',

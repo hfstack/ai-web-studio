@@ -69,7 +69,7 @@ export default function FileExplorer({
     
     try {
       // 从 localStorage 获取 projectRoot
-      const projectRoot = localStorage.getItem(`project_${projectId}_root`) || '';
+      const projectRoot = localStorage.getItem(projectId || '')?.split('project_')[1] || '';
       
       const response = await fetch(
         `/api/files?projectId=${projectId}&path=${encodeURIComponent(itemPath)}${projectRoot ? `&projectRoot=${encodeURIComponent(projectRoot)}` : ''}`,

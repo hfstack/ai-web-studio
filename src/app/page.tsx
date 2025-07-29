@@ -52,9 +52,27 @@ export default function HomePage() {
   const handleOpenProject = () => {
     if (projectPath) {
       // Get or create projectId for this path
-      const projectId = localStorage.getItem(`project_${projectPath}`) || generateProjectId();
-      localStorage.setItem(`project_${projectPath}`, projectId);
-      localStorage.setItem(`project_${projectId}_root`, projectPath);
+
+      // Find existing projectId for this path or create a new one
+      let projectId = null;
+      
+      // Check if we already have this project path stored
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('project_')) {
+          const storedPath = localStorage.getItem(key);
+          if (storedPath === `project_${projectPath}`) {
+            projectId = key;
+            break;
+          }
+        }
+      }
+      
+      // If not found, generate a new projectId
+      if (!projectId) {
+        projectId = generateProjectId();
+        localStorage.setItem(projectId, `project_${projectPath}`);
+      }
       
       // Pass projectId and path to terminal
       router.push(`/terminal?path=${encodeURIComponent(projectPath)}&projectId=${projectId}&action=open`);
@@ -94,8 +112,7 @@ export default function HomePage() {
         }
         
         // Store the project path in localStorage
-        localStorage.setItem(`project_${data.path}`, projectId);
-        localStorage.setItem(`project_${projectId}_root`, data.path);
+        localStorage.setItem(projectId,`project_${data.path}`);
         
         // Redirect to terminal with the cloned project
         router.push(`/terminal?path=${encodeURIComponent(data.path)}&projectId=${projectId}&action=open`);
@@ -115,7 +132,7 @@ export default function HomePage() {
     
     // Store the project root path in localStorage (using home directory instead of root)
     const homeDir = typeof process !== 'undefined' ? process.env.HOME || process.env.USERPROFILE || '/' : '/';
-    localStorage.setItem(`project_${projectId}_root`, homeDir);
+    localStorage.setItem(projectId, homeDir);
     
     // Navigate to terminal with the default project
     router.push(`/terminal?projectId=${projectId}`);
@@ -225,8 +242,8 @@ export default function HomePage() {
                   className="bg-gray-700 rounded p-4 hover:bg-gray-600 cursor-pointer transition-colors"
                   onClick={() => handleOpenRecentProject(project)}
                 >
-                  <div className="font-medium">{project.id}</div>
-                  <div className="text-sm text-gray-400 truncate">{project.name}</div>
+                  <div className="font-medium overflow-hidden text-ellipsis whitespace-nowrap">{project.id}</div>
+                  <div className="text-sm text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap">{project.name}</div>
                   <div className="text-xs text-gray-500 mt-2">
                     Last accessed: {new Date(project.lastAccessed).toLocaleDateString()}
                   </div>
