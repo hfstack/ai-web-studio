@@ -28,7 +28,7 @@ export default function DebugManager() {
   const [refreshInterval, setRefreshInterval] = useState<number>(5000);
   const router = useRouter();
 
-  // 获取所有活跃进程
+  // Fetch all active processes
   const fetchProcesses = async () => {
     try {
       setLoading(true);
@@ -45,17 +45,17 @@ export default function DebugManager() {
         setProcesses(data.activeProcesses);
         setError(null);
       } else {
-        setError(data.error || '获取进程列表失败');
+        setError(data.error || 'Failed to fetch process list');
       }
     } catch (err) {
-      setError('获取进程列表时发生错误');
+      setError('Error occurred while fetching process list');
       console.error('Error fetching processes:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  // 终止指定端口的进程
+  // Terminate process on specified port
   const terminateProcess = async (port: number) => {
     try {
       const response = await fetch(`/api/debug?port=${port}`, {
@@ -65,25 +65,25 @@ export default function DebugManager() {
       const data = await response.json();
       
       if (data.success) {
-        // 重新获取进程列表
+        // Refresh process list
         fetchProcesses();
       } else {
-        setError(data.error || `终止端口 ${port} 的进程失败`);
+        setError(data.error || `Failed to terminate process on port ${port}`);
       }
     } catch (err) {
-      setError(`终止端口 ${port} 的进程时发生错误`);
+      setError(`Error occurred while terminating process on port ${port}`);
       console.error(`Error terminating process on port ${port}:`, err);
     }
   };
 
-  // 访问指定端口的应用
+  // Open application on specified port
   const openProcess = (port: number) => {
-    // 获取当前主机名
+    // Get current hostname
     const hostname = window.location.hostname;
     window.open(`http://${hostname}:${port}`, '_blank');
   };
 
-  // 定期刷新进程列表
+  // Periodically refresh process list
   useEffect(() => {
     fetchProcesses();
     
@@ -96,7 +96,7 @@ export default function DebugManager() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Debug 进程管理器</h1>
+      <h1 className={styles.title}>Debug Process Manager</h1>
       
       <div className={styles.controls}>
         <button 
@@ -104,11 +104,11 @@ export default function DebugManager() {
           className={styles.refreshButton}
           disabled={loading}
         >
-          {loading ? '刷新中...' : '刷新列表'}
+          {loading ? 'Refreshing...' : 'Refresh List'}
         </button>
         
         <div className={styles.refreshControl}>
-          <label htmlFor="refreshInterval">自动刷新间隔 (毫秒):</label>
+          <label htmlFor="refreshInterval">Auto-refresh Interval (ms):</label>
           <input
             id="refreshInterval"
             type="number"
@@ -125,26 +125,26 @@ export default function DebugManager() {
         <div className={styles.error}>
           <p>{error}</p>
           <button onClick={() => setError(null)} className={styles.closeButton}>
-            关闭
+            Close
           </button>
         </div>
       )}
       
       {processes.length === 0 ? (
         <div className={styles.emptyState}>
-          {loading ? '加载中...' : '当前没有运行中的 Debug 进程'}
+          {loading ? 'Loading...' : 'No debug processes currently running'}
         </div>
       ) : (
         <div className={styles.tableContainer}>
           <table className={styles.processTable}>
             <thead>
               <tr>
-                <th>端口</th>
-                <th>启动时间</th>
-                <th>已运行时间</th>
-                <th>剩余时间</th>
-                <th>过期时间</th>
-                <th>操作</th>
+                <th>Port</th>
+                <th>Start Time</th>
+                <th>Running Time</th>
+                <th>Remaining Time</th>
+                <th>Expires At</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -160,13 +160,13 @@ export default function DebugManager() {
                       onClick={() => openProcess(process.port)}
                       className={styles.openButton}
                     >
-                      访问
+                      Open
                     </button>
                     <button
                       onClick={() => terminateProcess(process.port)}
                       className={styles.terminateButton}
                     >
-                      终止
+                      Terminate
                     </button>
                   </td>
                 </tr>

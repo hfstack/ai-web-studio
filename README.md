@@ -16,6 +16,7 @@ AIStudio is a web-based integrated development environment that allows you to de
 - **Web Viewer**: Preview web applications directly in the IDE
 - **Git Integration**: Commit changes, view diffs, and check commit history without leaving the browser
 - **Debug Configuration**: Run debug commands and preview applications on custom ports
+- **Process Manager**: View and manage application processes started through the debug feature
 
 ## Screenshots
 
@@ -29,19 +30,6 @@ AIStudio is a web-based integrated development environment that allows you to de
 ![Mobile Terminal Page](mobile.png)
 
 AIStudio features full responsive design, providing an optimized experience on both desktop and mobile devices.
-
-## Features
-
-- **AI Programming Assistants**: Use Qwen and Gemini directly in your browser for coding
-- **Mobile Development Support**: Develop on any device through a web browser
-- **Project Management**: Create new projects or open existing ones from your local filesystem
-- **GitHub Integration**: Clone repositories directly from GitHub
-- **Integrated Terminal**: Full-featured terminal with support for all standard commands
-- **Code Editor**: Built-in code editor with syntax highlighting for multiple languages
-- **File Explorer**: Browse and manage your project files
-- **Web Viewer**: Preview web applications directly in the IDE
-- **Git Integration**: Commit changes, view diffs, and check commit history without leaving the browser
-- **Debug Configuration**: Run debug commands and preview applications on custom ports
 
 ## Technologies Used
 
