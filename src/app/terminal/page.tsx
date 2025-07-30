@@ -15,6 +15,66 @@ type Tab = {
   url?: string;  // For web tabs
 };
 
+// WebTabTitle component for editing web tab URLs
+function WebTabTitle({ title, url, onUpdateUrl }: { 
+  title: string; 
+  url: string; 
+  onUpdateUrl: (newUrl: string) => void 
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(url);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleTitleClick = () => {
+    setIsEditing(true);
+    setEditValue(url);
+  };
+
+  const handleSave = () => {
+    if (editValue && editValue !== url) {
+      // Ensure URL has protocol
+      const fullUrl = editValue.startsWith('http') ? editValue : `https://${editValue}`;
+      onUpdateUrl(fullUrl);
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+    }
+  };
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isEditing]);
+
+  return isEditing ? (
+    <input
+      ref={inputRef}
+      type="text"
+      value={editValue}
+      onChange={(e) => setEditValue(e.target.value)}
+      onBlur={handleSave}
+      onKeyDown={handleKeyDown}
+      className="bg-gray-600 text-white px-1 rounded w-full"
+    />
+  ) : (
+    <span 
+      className="truncate max-w-xs hover:underline" 
+      onClick={handleTitleClick}
+      title={`Click to edit URL: ${url}`}
+    >
+      {title}
+    </span>
+  );
+}
+
 function TerminalContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -355,6 +415,26 @@ function TerminalContent() {
     setWebUrl('');
   };
 
+  // Function to update web tab URL
+  const updateWebTabUrl = (tabId: string, newUrl: string) => {
+    setTabs(prev => prev.map(tab => {
+      if (tab.id === tabId && tab.type === 'web') {
+        return {
+          ...tab,
+          title: newUrl.replace(/^https?:\/\//, '').split('/')[0],
+          url: newUrl
+        };
+      }
+      return tab;
+    }));
+    
+    // Also update the webUrl state if this is the active tab
+    const activeTab = tabs.find(tab => tab.id === tabId);
+    if (activeTab && activeTab.id === activeTabId && activeTab.type === 'web') {
+      setWebUrl(newUrl);
+    }
+  };
+
   const closeTab = (tabId: string) => {
     setTabs(prev => {
       const newTabs = prev.filter(tab => tab.id !== tabId);
@@ -523,7 +603,15 @@ function TerminalContent() {
                         onClick={() => setActiveTabId(tab.id)}
                       >
                         <span className="mr-2">{tab.type === 'file' ? '📄' : '🌐'}</span>
-                        <span className="truncate max-w-xs">{tab.title}</span>
+                        {tab.type === 'web' ? (
+                          <WebTabTitle 
+                            title={tab.title} 
+                            url={tab.url || ''} 
+                            onUpdateUrl={(newUrl) => updateWebTabUrl(tab.id, newUrl)} 
+                          />
+                        ) : (
+                          <span className="truncate max-w-xs">{tab.title}</span>
+                        )}
                         <button 
                           className="ml-2 text-gray-400 hover:text-white"
                           onClick={(e) => {
@@ -674,7 +762,15 @@ function TerminalContent() {
                     onClick={() => setActiveTabId(tab.id)}
                   >
                     <span className="mr-2">{tab.type === 'file' ? '📄' : '🌐'}</span>
-                    <span className="truncate max-w-xs">{tab.title}</span>
+                    {tab.type === 'web' ? (
+                      <WebTabTitle 
+                        title={tab.title} 
+                        url={tab.url || ''} 
+                        onUpdateUrl={(newUrl) => updateWebTabUrl(tab.id, newUrl)} 
+                      />
+                    ) : (
+                      <span className="truncate max-w-xs">{tab.title}</span>
+                    )}
                     <button 
                       className="ml-2 text-gray-400 hover:text-white"
                       onClick={(e) => {
