@@ -279,9 +279,19 @@ function TerminalContent() {
       const data = await response.json();
       
       if (data.success && data.url) {
-        // Set webUrl and load the web page in our viewer
-        setWebUrl(data.url);
-        loadWebPage();
+        // Set webUrl and directly create a new tab for the web page
+        const url = data.url;
+        
+        // Create new tab directly instead of just setting webUrl
+        const newTab: Tab = {
+          id: `web-${Date.now()}`,
+          type: 'web',
+          title: url.replace(/^https?:\/\//, '').split('/')[0],
+          url: url
+        };
+        
+        setTabs(prev => [...prev, newTab]);
+        setActiveTabId(newTab.id);
       } else {
         console.error('Failed to run debug command:', data.error);
       }
@@ -324,7 +334,7 @@ function TerminalContent() {
     
     // Check if web page is already open
     const existingTab = tabs.find(tab => tab.type === 'web' && tab.url === webUrl);
-    
+    console.log(222, existingTab)
     if (existingTab) {
       // Switch to existing tab
       setActiveTabId(existingTab.id);

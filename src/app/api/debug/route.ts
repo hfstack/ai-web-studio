@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server';
 import { spawn, IPty } from 'node-pty';
 import { networkInterfaces } from 'os';
 import { exec } from 'child_process';
+import { 
+  initializeDatabase, 
+  saveProcess, 
+  deleteProcess, 
+  getAllProcesses, 
+  getProcessByPort,
+  deleteExpiredProcesses,
+  updateProcessTimerId
+} from '@/lib/process-db';
 
 // 进程超时时间（毫秒），默认30分钟
 const PROCESS_TIMEOUT = 30 * 60 * 1000;
@@ -15,7 +24,10 @@ interface ProcessInfo {
 
 const processMap: Map<number, ProcessInfo> = new Map();
 
-// 启动时检查并清理可能存在的僵尸进程
+// 初始化数据库
+initializeDatabase();
+
+// 启动时检查并清理可能存在的僵尸进程和过期数据
 function cleanupZombieProcesses() {
   console.log('Checking for zombie processes...');
   exec('ps aux | grep node', (error, stdout) => {
@@ -25,6 +37,10 @@ function cleanupZombieProcesses() {
     }
     console.log('Current running processes:', stdout);
   });
+  
+  // 清理过期的进程数据
+  const deletedCount = deleteExpiredProcesses();
+  console.log(`Cleaned up ${deletedCount} expired processes from database`);
 }
 
 export async function POST(request: Request) {
@@ -42,21 +58,28 @@ export async function POST(request: Request) {
     // 自定义超时时间或使用默认值
     const processTimeout = timeout ? parseInt(timeout) : PROCESS_TIMEOUT;
     
-    // 检查是否已有进程在使用该端口，如果有则关闭
-    if (processMap.has(port)) {
-      const existingProcessInfo = processMap.get(port);
-      if (existingProcessInfo) {
-        try {
-          // 清除现有的计时器
-          clearTimeout(existingProcessInfo.timer);
-          // 关闭进程
-          existingProcessInfo.process.kill();
-          console.log(`Killed existing process on port ${port}`);
-        } catch (err) {
-          console.error(`Error killing process on port ${port}:`, err);
+    // 检查数据库中是否已有进程在使用该端口，如果有则关闭
+    const existingProcess = getProcessByPort(port);
+    if (existingProcess) {
+      // 如果内存中有对应的进程，先清理
+      if (processMap.has(port)) {
+        const existingProcessInfo = processMap.get(port);
+        if (existingProcessInfo) {
+          try {
+            // 清除现有的计时器
+            clearTimeout(existingProcessInfo.timer);
+            // 关闭进程
+            existingProcessInfo.process.kill();
+            console.log(`Killed existing process on port ${port}`);
+          } catch (err) {
+            console.error(`Error killing process on port ${port}:`, err);
+          }
+          processMap.delete(port);
         }
-        processMap.delete(port);
       }
+      
+      // 从数据库中删除旧记录
+      deleteProcess(port);
     }
     
     // Get the current IP address
@@ -85,6 +108,8 @@ export async function POST(request: Request) {
       env: process.env
     });
     
+    const startTime = Date.now();
+    
     // 创建超时计时器
     const timer = setTimeout(() => {
       console.log(`Process on port ${port} timed out after ${processTimeout}ms`);
@@ -100,24 +125,37 @@ export async function POST(request: Request) {
           processMap.delete(port);
         }
       }
+      // 从数据库中删除过期进程
+      deleteProcess(port);
     }, processTimeout);
     
     // 将进程添加到映射表中
     processMap.set(port, {
       process: bashProcess,
       timer,
-      startTime: Date.now()
+      startTime
     });
-    
-    // 监听进程退出事件，自动从映射表中移除
+    // 保存进程信息到数据库
+    saveProcess(port, command, path, bashProcess.pid, startTime, processTimeout);
+    console.log('saved process to database', port, command)
+    // 监听进程退出事件，自动从映射表中移除并从数据库中删除
     bashProcess.onExit(() => {
       console.log(`Process on port ${port} exited`);
       if (processMap.has(port)) {
         const processInfo = processMap.get(port);
         if (processInfo) {
           clearTimeout(processInfo.timer);
+          // 只有当退出的进程是当前映射表中的进程时才删除数据库记录
+          if (processInfo.process === bashProcess) {
+            console.log(`Removing process on port ${port} from database`);
+            processMap.delete(port);
+            // 从数据库中删除已完成的进程
+            deleteProcess(port);
+          } else {
+            console.log(`Process on port ${port} exited but a new process is running on this port`);
+            processMap.delete(port);
+          }
         }
-        processMap.delete(port);
       }
     });
     
@@ -127,7 +165,7 @@ export async function POST(request: Request) {
     // Return the URL to open
     return NextResponse.json({ 
       success: true,
-      url: `http://${ipAddress}:${port}`,
+      url: `http://localhost:${port}`,
       timeout: processTimeout,
       expiresAt: new Date(Date.now() + processTimeout).toISOString()
     });
@@ -143,18 +181,26 @@ export async function POST(request: Request) {
 // 获取当前所有活跃的进程信息
 export async function GET() {
   try {
-    const activeProcesses = Array.from(processMap.entries()).map(([port, info]) => {
-      const runningTime = Date.now() - info.startTime;
-      const remainingTime = Math.max(0, PROCESS_TIMEOUT - runningTime);
+    // 先清理过期的进程
+    deleteExpiredProcesses();
+    
+    // 获取数据库中的所有进程
+    const dbProcesses = getAllProcesses();
+    
+    const activeProcesses = dbProcesses.map(process => {
+      const runningTime = Date.now() - process.start_time;
+      const remainingTime = Math.max(0, process.timeout - runningTime);
       
       return {
-        port,
-        startTime: new Date(info.startTime).toISOString(),
+        port: process.port,
+        command: process.command,
+        path: process.path || undefined,
+        startTime: new Date(process.start_time).toISOString(),
         runningTimeMs: runningTime,
         runningTimeFormatted: `${Math.floor(runningTime / 60000)}m ${Math.floor((runningTime % 60000) / 1000)}s`,
         remainingTimeMs: remainingTime,
         remainingTimeFormatted: `${Math.floor(remainingTime / 60000)}m ${Math.floor((remainingTime % 60000) / 1000)}s`,
-        expiresAt: new Date(info.startTime + PROCESS_TIMEOUT).toISOString()
+        expiresAt: new Date(process.start_time + process.timeout).toISOString()
       };
     });
     
@@ -185,39 +231,37 @@ export async function DELETE(request: Request) {
       }, { status: 400 });
     }
     
-    if (!processMap.has(port)) {
+    // 从数据库中查找进程
+    const processEntry = getProcessByPort(port);
+    if (!processEntry) {
       return NextResponse.json({ 
         success: false, 
         error: `No process found on port ${port}` 
       }, { status: 404 });
     }
     
-    const processInfo = processMap.get(port);
-    if (processInfo) {
-      try {
-        // 清除计时器
-        clearTimeout(processInfo.timer);
-        // 关闭进程
-        processInfo.process.kill();
-        console.log(`Killed process on port ${port}`);
+    // 直接根据 processEntry 数据关闭进程
+    try {
+      // 使用 process.kill 发送终止信号给进程
+      processEntry.pid && process.kill(processEntry.pid);
+      console.log(`Killed process with PID ${processEntry.pid} on port ${port}`);
+      
+      // 如果进程也在内存映射表中，清理相关资源
+      if (processMap.has(port)) {
+        clearTimeout(processMap.get(port)?.timer);
         processMap.delete(port);
-        return NextResponse.json({ 
-          success: true, 
-          message: `Process on port ${port} terminated` 
-        });
-      } catch (err) {
-        console.error(`Error killing process on port ${port}:`, err);
-        return NextResponse.json({ 
-          success: false, 
-          error: `Failed to kill process on port ${port}` 
-        }, { status: 500 });
       }
+    } catch (err) {
+      console.error(`Error killing process on port ${port}:`, err);
     }
     
+    // 从数据库中删除进程记录
+    deleteProcess(port);
+    
     return NextResponse.json({ 
-      success: false, 
-      error: 'Unknown error' 
-    }, { status: 500 });
+      success: true, 
+      message: `Process on port ${port} terminated` 
+    });
   } catch (error) {
     console.error('Error in DELETE request:', error);
     return NextResponse.json({ 

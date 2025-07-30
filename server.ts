@@ -2,6 +2,7 @@ import next from 'next';
 import { createServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
 import { TerminalServer } from './src/lib/terminal-server';
+import { deleteExpiredProcesses } from './src/lib/process-db';
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
@@ -117,8 +118,20 @@ app.prepare().then(() => {
     });
   });
 
-  const port = process.env.PORT || 3010;
+  // 定时清理过期进程数据的任务
+function startCleanupTask() {
+  // 每5分钟清理一次过期进程
+  setInterval(() => {
+    const deletedCount = deleteExpiredProcesses();
+    if (deletedCount > 0) {
+      console.log(`Cleaned up ${deletedCount} expired processes`);
+    }
+  }, 5 * 60 * 1000); // 5分钟
+}
+
+const port = process.env.PORT || 3010;
   server.listen(port, () => {
     console.log(`> Ready on http://localhost:${port}`);
+    startCleanupTask(); // 启动定时清理任务
   });
 });
