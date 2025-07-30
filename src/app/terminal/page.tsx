@@ -148,14 +148,20 @@ function TerminalContent() {
 
       if (!isMounted) return;
 
+      // Get CSS variable values for terminal theme
+      const getTerminalTheme = () => {
+        const styles = getComputedStyle(document.documentElement);
+        return {
+          background: styles.getPropertyValue('--terminal-bg').trim() || '#1a202c',
+          foreground: styles.getPropertyValue('--terminal-text').trim() || '#e2e8f0',
+        };
+      };
+
       // Create terminal instance if it doesn't exist
       if (!terminal.current) {
         terminal.current = new Terminal({
           rows: 30,
-          theme: {
-            background: '#1a202c', // gray-900
-            foreground: '#e2e8f0', // gray-200
-          },
+          theme: getTerminalTheme(),
         });
 
         // Add fit addon
@@ -172,6 +178,21 @@ function TerminalContent() {
       if (fitAddon.current) {
         fitAddon.current.fit();
       }
+
+      // Update terminal theme when theme changes
+      const handleThemeChange = () => {
+        if (terminal.current) {
+          terminal.current.options.theme = getTerminalTheme();
+        }
+      };
+
+      // Listen for theme changes
+      window.addEventListener('theme-change', handleThemeChange);
+
+      // Cleanup listener
+      return () => {
+        window.removeEventListener('theme-change', handleThemeChange);
+      };
     };
 
     initTerminal();
@@ -316,6 +337,29 @@ function TerminalContent() {
   const handleGoHome = () => {
     router.push('/');
   };
+
+  // Theme toggle function
+  const toggleTheme = () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    
+    // Dispatch custom event to notify theme change
+    window.dispatchEvent(new CustomEvent('theme-change'));
+  };
+
+  // Set initial theme based on localStorage or system preference
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    } else if (systemPrefersDark) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  }, []);
 
   const handleDebugCommand = async () => {
     try {
@@ -486,6 +530,12 @@ function TerminalContent() {
             className="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm"
           >
             Debug
+          </button>
+          <button 
+            onClick={toggleTheme}
+            className="bg-gray-700 hover:bg-gray-600 text-white py-1 px-3 rounded text-sm"
+          >
+            Theme
           </button>
           <button 
             onClick={handleGoHome}
