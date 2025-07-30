@@ -1,6 +1,6 @@
-# AIStudio
+# AIWebStudio
 
-AIStudio 是一个基于 Web 的集成开发环境，允许您在浏览器中直接使用 Qwen 和 Gemini 等 AI 助手来开发项目。它通过提供一个可通过任何设备的网页浏览器访问的完整开发环境，使移动开发成为可能。
+AIWebStudio 是一个基于 Web 的集成开发环境，允许您在浏览器中直接使用 Qwen 和 Gemini 等 AI 助手来开发项目。它通过提供一个可通过任何设备的网页浏览器访问的完整开发环境，使移动开发成为可能。
 
 ## 功能特性
 
@@ -27,7 +27,7 @@ AIStudio 是一个基于 Web 的集成开发环境，允许您在浏览器中直
 ### 移动端终端页面
 ![移动端终端页面](mobile.png)
 
-AIStudio 采用全响应式设计，在桌面和移动设备上都提供优化的体验。
+AIWebStudio 采用全响应式设计，在桌面和移动设备上都提供优化的体验。
 
 ## 使用技术
 
@@ -70,7 +70,7 @@ npm run dev
 
 ## 部署
 
-要将 AIStudio 部署到云端服务器，请按照以下步骤操作：
+要将 AIWebStudio 部署到云端服务器，请按照以下步骤操作：
 
 1. 选择一个支持 Node.js 的云服务器（如 AWS EC2、Google Cloud、阿里云等）
 
@@ -87,8 +87,8 @@ npm run dev
 
 3. 克隆项目到服务器：
    ```bash
-   git clone <your-repo-url>
-   cd aistudio
+   git clone https://github.com/hfstack/ai-web-studio.git
+   cd ai-web-studio
    ```
 
 4. 安装项目依赖：
@@ -133,14 +133,14 @@ npm run dev
    npm install -g pm2
    
    # 使用 PM2 启动服务
-   pm2 start server.ts --name aistudio
+   pm2 start server.ts --name aiwebstudio
    pm2 startup  # 设置开机自启
    pm2 save     # 保存当前进程列表
    ```
 
 10. 配置防火墙和反向代理（如 Nginx）以允许外部访问。
 
-现在，AIStudio 应该在你的云服务器上运行了。确保你已正确配置了所有 AI 工具的 API 密钥，以便能够正常使用 Qwen 和 Gemini 功能。
+现在，AIWebStudio 应该在你的云服务器上运行了。确保你已正确配置了所有 AI 工具的 API 密钥，以便能够正常使用 Qwen 和 Gemini 功能。
 
 ## 项目结构
 
@@ -290,4 +290,4 @@ gemini "生成一个 React 组件示例" --output component.js
 
 ---
 
-[English Version](README.md) | [返回顶部](#aistudio)
+[English Version](README.md) | [返回顶部](#aiwebstudio)

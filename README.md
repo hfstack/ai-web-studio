@@ -1,6 +1,6 @@
-# AIStudio
+# AIWebStudio
 
-AIStudio is a web-based integrated development environment that allows you to develop projects using AI assistants like Qwen and Gemini directly in your browser. It makes mobile development possible by providing a full development environment accessible from any device with a web browser.
+AIWebStudio is a web-based integrated development environment that allows you to develop projects using AI assistants like Qwen and Gemini directly in your browser. It makes mobile development possible by providing a full development environment accessible from any device with a web browser.
 
 [中文版本](README_zh.md)
 
@@ -29,7 +29,7 @@ AIStudio is a web-based integrated development environment that allows you to de
 ### Mobile Terminal Page
 ![Mobile Terminal Page](mobile.png)
 
-AIStudio features full responsive design, providing an optimized experience on both desktop and mobile devices.
+AIWebStudio features full responsive design, providing an optimized experience on both desktop and mobile devices.
 
 ## Technologies Used
 
@@ -72,7 +72,7 @@ Note: `npm run dev` only starts the frontend service, while `npm run server` sta
 
 ## Deployment
 
-To deploy AIStudio to a cloud server, follow these steps:
+To deploy AIWebStudio to a cloud server, follow these steps:
 
 1. Choose a cloud server that supports Node.js (such as AWS EC2, Google Cloud, Alibaba Cloud, etc.)
 
@@ -89,8 +89,8 @@ To deploy AIStudio to a cloud server, follow these steps:
 
 3. Clone the project to the server:
    ```bash
-   git clone <your-repo-url>
-   cd aistudio
+   git clone https://github.com/hfstack/ai-web-studio.git
+   cd ai-web-studio
    ```
 
 4. Install project dependencies:
@@ -135,14 +135,14 @@ To deploy AIStudio to a cloud server, follow these steps:
    npm install -g pm2
    
    # Use PM2 to start the service
-   pm2 start server.ts --name aistudio
+   pm2 start server.ts --name aiwebstudio
    pm2 startup  # Set up auto-start on boot
    pm2 save     # Save the current process list
    ```
 
 10. Configure firewall and reverse proxy (such as Nginx) to allow external access.
 
-AIStudio should now be running on your cloud server. Make sure you have properly configured API keys for all AI tools to be able to use Qwen and Gemini features.
+AIWebStudio should now be running on your cloud server. Make sure you have properly configured API keys for all AI tools to be able to use Qwen and Gemini features.
 
 ## Project Structure
 

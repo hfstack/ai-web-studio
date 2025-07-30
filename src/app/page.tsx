@@ -183,7 +183,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4">
       <div className="max-w-4xl w-full space-y-8">
         <div className="text-center relative">
-          <h1 className="text-4xl font-bold mb-2">AIStudio</h1>
+          <h1 className="text-4xl font-bold mb-2">AIWebStudio</h1>
           <p className="text-gray-400">Develop with AI assistants anywhere, anytime</p>
           <div className="absolute top-0 right-0 flex gap-2">
             <a 

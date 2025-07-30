@@ -540,7 +540,7 @@ function TerminalContent() {
     <div className="flex flex-col h-screen bg-gray-900 text-white">
       {/* Header */}
       <header className="bg-gray-800 p-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold">AIStudio</h1>
+        <h1 className="text-xl font-bold">AIWebStudio</h1>
         <div className="flex space-x-2">
           {isMobile && (
             <button 
