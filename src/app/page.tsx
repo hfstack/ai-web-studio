@@ -185,12 +185,20 @@ export default function HomePage() {
         <div className="text-center relative">
           <h1 className="text-4xl font-bold mb-2">Project Studio</h1>
           <p className="text-gray-400">Create and manage your projects with ease</p>
-          <button 
-            onClick={() => setShowDebugConfig(!showDebugConfig)}
-            className="absolute top-0 right-0 bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm"
-          >
-            Debug
-          </button>
+          <div className="absolute top-0 right-0 flex gap-2">
+            <button 
+              onClick={() => setShowDebugConfig(!showDebugConfig)}
+              className="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm"
+            >
+              Debug
+            </button>
+            <a 
+              href="/debug-manager"
+              className="bg-purple-600 hover:bg-purple-700 text-white py-1 px-3 rounded text-sm"
+            >
+              Manage
+            </a>
+          </div>
         </div>
 
         {/* Debug Configuration Panel */}
