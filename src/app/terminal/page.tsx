@@ -5,11 +5,12 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import socketIOClient from 'socket.io-client';
 import FileExplorer from './components/FileExplorer';
 import CodeEditor from './components/CodeEditor';
+import GitTool from './components/GitTool';
 
 // Tab type
 type Tab = {
   id: string;
-  type: 'file' | 'web';
+  type: 'file' | 'web' | 'git';
   title: string;
   path?: string; // For file tabs
   url?: string;  // For web tabs
@@ -433,6 +434,26 @@ function TerminalContent() {
     setShowWebViewer(true);
   };
 
+  const openGitTool = () => {
+    // Check if Git tool is already open
+    const existingTab = tabs.find(tab => tab.type === 'git');
+    
+    if (existingTab) {
+      // Switch to existing tab
+      setActiveTabId(existingTab.id);
+    } else {
+      // Create new tab
+      const newTab: Tab = {
+        id: `git-${Date.now()}`,
+        type: 'git',
+        title: 'Git Tool'
+      };
+      
+      setTabs(prev => [...prev, newTab]);
+      setActiveTabId(newTab.id);
+    }
+  };
+
   const loadWebPage = () => {
     if (!webUrl) return;
     
@@ -628,6 +649,12 @@ function TerminalContent() {
                 >
                   Web
                 </button>
+                <button 
+                  onClick={openGitTool}
+                  className="bg-gray-700 hover:bg-gray-600 text-white p-1 rounded text-xs"
+                >
+                  Git
+                </button>
                 {!showFileExplorer && (
                   <button 
                     onClick={toggleFileExplorer}
@@ -652,7 +679,7 @@ function TerminalContent() {
                         }`}
                         onClick={() => setActiveTabId(tab.id)}
                       >
-                        <span className="mr-2">{tab.type === 'file' ? '📄' : '🌐'}</span>
+                        <span className="mr-2">{tab.type === 'file' ? '📄' : tab.type === 'web' ? '🌐' : 'Git'}</span>
                         {tab.type === 'web' ? (
                           <WebTabTitle 
                             title={tab.title} 
@@ -742,6 +769,10 @@ function TerminalContent() {
                             title={activeTab.title}
                           />
                         </div>
+                      ) : activeTab.type === 'git' ? (
+                        <div className="w-full h-full">
+                          <GitTool />
+                        </div>
                       ) : null;
                     })()
                   ) : (
@@ -797,6 +828,12 @@ function TerminalContent() {
                 >
                   Open Web Page
                 </button>
+                <button 
+                  onClick={openGitTool}
+                  className="bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                >
+                  Git Tool
+                </button>
               </div>
             </div>
             
@@ -811,7 +848,7 @@ function TerminalContent() {
                     }`}
                     onClick={() => setActiveTabId(tab.id)}
                   >
-                    <span className="mr-2">{tab.type === 'file' ? '📄' : '🌐'}</span>
+                    <span className="mr-2">{tab.type === 'file' ? '📄' : tab.type === 'web' ? '🌐' : 'Git'}</span>
                     {tab.type === 'web' ? (
                       <WebTabTitle 
                         title={tab.title} 
@@ -887,6 +924,10 @@ function TerminalContent() {
                         className="w-full h-full"
                         title={activeTab.title}
                       />
+                    ) : activeTab.type === 'git' ? (
+                      <div className="w-full h-full">
+                        <GitTool />
+                      </div>
                     ) : null;
                   })()
                 ) : (

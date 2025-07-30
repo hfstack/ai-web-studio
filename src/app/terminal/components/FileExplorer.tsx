@@ -141,7 +141,7 @@ export default function FileExplorer({
                 <span className="truncate">{item.name}</span>
               </div>
               
-              <button 
+              {/* <button 
                 onClick={(e) => {
                   e.stopPropagation();
                   const fullPath = currentPath ? `${currentPath}/${item.name}` : item.name;
@@ -150,7 +150,7 @@ export default function FileExplorer({
                 className="ml-2 px-2 py-1 bg-red-700 rounded hover:bg-red-600"
               >
                 🗑️
-              </button>
+              </button> */}
             </div>
           ))}
         </div>
