@@ -93,6 +93,7 @@ function TerminalContent() {
   const [debugCommand, setDebugCommand] = useState('npm run server');
   const [debugPort, setDebugPort] = useState('3030');
   const [showDebugConfig, setShowDebugConfig] = useState(false);
+  const [isTerminalInitialized, setIsTerminalInitialized] = useState(false);
   const terminalRef = useRef<HTMLDivElement>(null);
   const terminal = useRef<any>(null);
   const fitAddon = useRef<any>(null);
@@ -190,6 +191,9 @@ function TerminalContent() {
       // Listen for theme changes
       window.addEventListener('theme-change', handleThemeChange);
 
+      // Mark terminal as initialized
+      setIsTerminalInitialized(true);
+
       // Cleanup listener
       return () => {
         window.removeEventListener('theme-change', handleThemeChange);
@@ -205,8 +209,7 @@ function TerminalContent() {
 
   // Handle terminal input
   useEffect(() => {
-    if (!terminal.current || !socket || !isConnected) return;
-
+    if (!terminal.current || !socket || !isConnected || !isTerminalInitialized) return;
     // Handle terminal input
     const dataListener = terminal.current.onData((data: string) => {
       if (socket && isConnected) {
@@ -216,9 +219,11 @@ function TerminalContent() {
 
     // Cleanup listener
     return () => {
-      dataListener.dispose();
+      if (dataListener) {
+        dataListener.dispose();
+      }
     };
-  }, [socket, isConnected, terminal.current]);
+  }, [socket, isConnected, isTerminalInitialized]); // Add isTerminalInitialized dependency
 
   // Initialize terminal and socket connection
   useEffect(() => {
@@ -459,7 +464,6 @@ function TerminalContent() {
     
     // Check if web page is already open
     const existingTab = tabs.find(tab => tab.type === 'web' && tab.url === webUrl);
-    console.log(222, existingTab)
     if (existingTab) {
       // Switch to existing tab
       setActiveTabId(existingTab.id);
