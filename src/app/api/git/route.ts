@@ -66,8 +66,9 @@ export async function GET(request: Request) {
         // Get all changes (staged and unstaged)
         result = await execPromise('git status --porcelain', { cwd: projectPath });
         const allFiles = result.stdout.trim().split('\n').filter(line => line).map(line => {
-          const status = line.substring(0, 2);
-          const filePath = line.substring(3).trim();
+          const status = line.substring(0, status.includes('??') ? 2 : 1);
+          // 如果状态是 ?? (未跟踪的文件), 文件路径从索引2开始, 否则从索引3开始
+          const filePath = line.substring(status.includes('??') ? 3 : 2).trim();
           return { status, path: filePath };
         });
         
