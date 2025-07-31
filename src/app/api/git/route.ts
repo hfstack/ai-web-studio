@@ -63,14 +63,29 @@ export async function GET(request: Request) {
     
     switch (action) {
       case 'status':
+        // Get all changes (staged and unstaged)
         result = await execPromise('git status --porcelain', { cwd: projectPath });
-        const files = result.stdout.trim().split('\n').filter(line => line).map(line => {
-          console.log(line)
-          const status = line.trim().substring(0, 1).trim();
-          const filePath = line.trim().substring(2);
+        const allFiles = result.stdout.trim().split('\n').filter(line => line).map(line => {
+          const status = line.substring(0, 2);
+          const filePath = line.substring(3).trim();
           return { status, path: filePath };
         });
-        return NextResponse.json({ files });
+        
+        // Separate staged and unstaged files
+        const stagedFiles = allFiles.filter(file => 
+          file.status.startsWith('A') || 
+          file.status.startsWith('M') || 
+          file.status.startsWith('D')
+        );
+        
+        const unstagedFiles = allFiles.filter(file => 
+          file.status.endsWith('A') || 
+          file.status.endsWith('M') || 
+          file.status.endsWith('D') || 
+          file.status.includes('?')
+        );
+        
+        return NextResponse.json({ allFiles, stagedFiles, unstagedFiles });
         
       case 'diff':
         const filePath = searchParams.get('filePath');
@@ -100,7 +115,7 @@ export async function GET(request: Request) {
   }
 }
 
-// Commit changes
+// Commit changes or stage files
 export async function POST(request: Request) {
   try {
     // Check if git is available
@@ -108,10 +123,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Git is not available on this system' }, { status: 500 });
     }
     
-    const { projectId, projectRoot, message, files } = await request.json();
+    const { projectId, projectRoot, message, files, action = 'commit' } = await request.json();
     
-    if (!projectId || !projectRoot || !message) {
-      return NextResponse.json({ error: 'Project ID, project root, and commit message are required' }, { status: 400 });
+    if (!projectId || !projectRoot) {
+      return NextResponse.json({ error: 'Project ID and project root are required' }, { status: 400 });
     }
     
     const projectPath = projectRoot;
@@ -126,7 +141,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Project is not a git repository' }, { status: 400 });
     }
     
-    // Add files to git
+    // Handle staging action
+    if (action === 'stage') {
+      if (files && files.length > 0) {
+        const addCommand = `git add ${files.map((f: string) => `"${f}"`).join(' ')}`;
+        await execPromise(addCommand, { cwd: projectPath });
+      } else {
+        // Add all changes
+        await execPromise('git add .', { cwd: projectPath });
+      }
+      return NextResponse.json({ success: true, action: 'stage' });
+    }
+    
+    // Handle unstage action
+    if (action === 'unstage') {
+      if (files && files.length > 0) {
+        // Use git reset to unstage specific files
+        const resetCommand = `git reset HEAD ${files.map((f: string) => `"${f}"`).join(' ')}`;
+        await execPromise(resetCommand, { cwd: projectPath });
+      } else {
+        // Unstage all files
+        await execPromise('git reset HEAD .', { cwd: projectPath });
+      }
+      return NextResponse.json({ success: true, action: 'unstage' });
+    }
+    
+    // Handle commit action (default)
+    if (!message) {
+      return NextResponse.json({ error: 'Commit message is required for commit action' }, { status: 400 });
+    }
+    
+    // Add files to git (this ensures they are staged before commit)
     if (files && files.length > 0) {
       const addCommand = `git add ${files.map((f: string) => `"${f}"`).join(' ')}`;
       await execPromise(addCommand, { cwd: projectPath });
@@ -138,11 +183,11 @@ export async function POST(request: Request) {
     // Commit changes
     await execPromise(`git commit -m "${message}"`, { cwd: projectPath });
     
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, action: 'commit' });
   } catch (error: any) {
-    console.error('Git commit error:', error);
+    console.error('Git operation error:', error);
     return NextResponse.json({ 
-      error: error.message || 'An error occurred while committing changes',
+      error: error.message || 'An error occurred while executing git operation',
       details: process.env.NODE_ENV === 'development' ? error : undefined
     }, { status: 500 });
   }

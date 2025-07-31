@@ -55,9 +55,14 @@ app.prepare().then(() => {
         // Get the session and set up data listener
         const session = terminalServer.getSession(sessionId);
         if (session) {
+          let lastData = '';
           session.process.onData((data) => {
-            // Send terminal output to the specific client
-            socket.emit('terminal-output', data);
+            // Check if current data includes lastData to avoid duplicates
+            if (!lastData || !data.includes(lastData)) {
+              // Send terminal output to the specific client
+              socket.emit('terminal-output', data);
+              lastData = data;
+            }
           });
         }
         

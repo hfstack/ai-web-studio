@@ -60,6 +60,7 @@ export class TerminalServer {
     const session = this.sessions.get(sessionId);
     if (session) {
       try {
+        console.log('Writing to terminal process:', data)
         session.process.write(data);
         return true;
       } catch (error) {
