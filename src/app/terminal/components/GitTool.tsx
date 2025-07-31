@@ -32,8 +32,16 @@ export default function GitTool() {
       setLoading(true);
       setError(null);
       
-      // Get projectRoot from localStorage
-      const projectRoot = localStorage.getItem(projectId)?.split('project_')[1] || '';
+      // Get projectRoot from localStorage or URL
+      let projectRoot = localStorage.getItem(projectId)?.split('project_')[1] || '';
+      if (!projectRoot) {
+        // Fallback to URL path if not cached
+        projectRoot = searchParams.get('path') || '';
+        if (projectRoot) {
+          // Cache the path for future use
+          localStorage.setItem(projectId, `project_${projectRoot}`);
+        }
+      }
       
       const response = await fetch(`/api/git?projectId=${projectId}&projectRoot=${encodeURIComponent(projectRoot)}&action=status`);
       const data = await response.json();
@@ -55,8 +63,16 @@ export default function GitTool() {
     if (!projectId) return;
     
     try {
-      // Get projectRoot from localStorage
-      const projectRoot = localStorage.getItem(projectId)?.split('project_')[1] || '';
+      // Get projectRoot from localStorage or URL
+      let projectRoot = localStorage.getItem(projectId)?.split('project_')[1] || '';
+      if (!projectRoot) {
+        // Fallback to URL path if not cached
+        projectRoot = searchParams.get('path') || '';
+        if (projectRoot) {
+          // Cache the path for future use
+          localStorage.setItem(projectId, `project_${projectRoot}`);
+        }
+      }
       
       const response = await fetch(`/api/git?projectId=${projectId}&projectRoot=${encodeURIComponent(projectRoot)}&action=log`);
       const data = await response.json();
@@ -81,8 +97,16 @@ export default function GitTool() {
       setLoading(true);
       setError(null);
       
-      // Get projectRoot from localStorage
-      const projectRoot = localStorage.getItem(projectId)?.split('project_')[1] || '';
+      // Get projectRoot from localStorage or URL
+      let projectRoot = localStorage.getItem(projectId)?.split('project_')[1] || '';
+      if (!projectRoot) {
+        // Fallback to URL path if not cached
+        projectRoot = searchParams.get('path') || '';
+        if (projectRoot) {
+          // Cache the path for future use
+          localStorage.setItem(projectId, `project_${projectRoot}`);
+        }
+      }
       
       const response = await fetch(`/api/git?projectId=${projectId}&projectRoot=${encodeURIComponent(projectRoot)}&action=diff&filePath=${encodeURIComponent(filePath)}`);
       const data = await response.json();
@@ -107,8 +131,16 @@ export default function GitTool() {
       setLoading(true);
       setError(null);
       
-      // Get projectRoot from localStorage
-      const projectRoot = localStorage.getItem(projectId)?.split('project_')[1] || '';
+      // Get projectRoot from localStorage or URL
+      let projectRoot = localStorage.getItem(projectId)?.split('project_')[1] || '';
+      if (!projectRoot) {
+        // Fallback to URL path if not cached
+        projectRoot = searchParams.get('path') || '';
+        if (projectRoot) {
+          // Cache the path for future use
+          localStorage.setItem(projectId, `project_${projectRoot}`);
+        }
+      }
       
       // Get list of modified files
       const modifiedFiles = files
@@ -154,10 +186,22 @@ export default function GitTool() {
 
   useEffect(() => {
     if (projectId) {
+      // Check if project path is already cached
+      const cachedPath = localStorage.getItem(projectId);
+      if (!cachedPath) {
+        // If not cached, try to get path from URL
+        const path = searchParams.get('path');
+        if (path) {
+          // Cache project path
+          localStorage.setItem(projectId, `project_${path}`);
+          console.log(`GitTool: Cached project path for ${projectId}: ${path}`);
+        }
+      }
+      
       fetchGitStatus();
       fetchGitLog();
     }
-  }, [projectId]);
+  }, [projectId, searchParams]);
 
   if (loading && files.length === 0 && commits.length === 0) {
     return <div className="p-4 text-gray-400">Loading Git data...</div>;

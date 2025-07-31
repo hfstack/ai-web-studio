@@ -331,6 +331,22 @@ function TerminalContent() {
     }
   }, [socket, sessionId, isConnected, searchParams]);
 
+  // Check and cache project ID and path
+  useEffect(() => {
+    const projectId = searchParams.get('projectId');
+    const path = searchParams.get('path');
+    
+    if (projectId) {
+      // Check if project path is already cached
+      const cachedPath = localStorage.getItem(projectId);
+      if (!cachedPath && path) {
+        // Cache project path if not already cached
+        localStorage.setItem(projectId, `project_${path}`);
+        console.log(`Cached project path for ${projectId}: ${path}`);
+      }
+    }
+  }, [searchParams]);
+
   // Load saved debug settings
   useEffect(() => {
     const savedCommand = localStorage.getItem('debugCommand');
