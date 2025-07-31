@@ -241,7 +241,18 @@ export default function GitTool() {
         }
       }
       
-      const response = await fetch(`/api/git?projectId=${projectId}&projectRoot=${encodeURIComponent(projectRoot)}&action=reset&filePath=${encodeURIComponent(filePath)}`);
+      const response = await fetch('/api/git', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          projectId,
+          projectRoot,
+          action: 'reset',
+          files: [filePath]
+        })
+      });
       const data = await response.json();
       
       if (!response.ok) {
@@ -251,7 +262,6 @@ export default function GitTool() {
       // Refresh data
       fetchGitStatus();
       
-      alert('Changes reset successfully!');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reset changes');
       console.error('Error resetting changes:', err);
@@ -307,7 +317,6 @@ export default function GitTool() {
       fetchGitStatus();
       fetchGitLog();
       
-      alert('Changes committed successfully!');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to commit changes');
       console.error('Error committing changes:', err);

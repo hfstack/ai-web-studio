@@ -115,7 +115,7 @@ export async function GET(request: Request) {
   }
 }
 
-// Commit changes or stage files
+// Commit changes, stage files, or reset files
 export async function POST(request: Request) {
   try {
     // Check if git is available
@@ -164,6 +164,32 @@ export async function POST(request: Request) {
         await execPromise('git reset HEAD .', { cwd: projectPath });
       }
       return NextResponse.json({ success: true, action: 'unstage' });
+    }
+    
+    // Handle reset action
+    if (action === 'reset') {
+      if (files && files.length > 0) {
+        // Handle different file statuses:
+        // 1. For modified tracked files, use git checkout HEAD
+        // 2. For untracked files (status ?), use fs.unlinkSync to delete them
+        for (const file of files) {
+          const fullPath = path.join(projectPath, file);
+          // Check if file exists and if it's tracked by git
+          try {
+            await execPromise(`git ls-files --error-unmatch "${file}"`, { cwd: projectPath });
+            // File is tracked, use git checkout
+            await execPromise(`git checkout HEAD -- "${file}"`, { cwd: projectPath });
+          } catch (error) {
+            // File is not tracked, delete it directly
+            if (fs.existsSync(fullPath)) {
+              fs.unlinkSync(fullPath);
+            }
+          }
+        }
+      } else {
+        return NextResponse.json({ error: 'Files are required for reset action' }, { status: 400 });
+      }
+      return NextResponse.json({ success: true, action: 'reset' });
     }
     
     // Handle commit action (default)
