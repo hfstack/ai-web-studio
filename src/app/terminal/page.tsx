@@ -85,11 +85,13 @@ function TerminalContent() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  // 默认假设是移动设备，避免布局闪烁
+  const [isMobile, setIsMobile] = useState(true);
   const [showFileExplorer, setShowFileExplorer] = useState(false);
   const [showWebViewer, setShowWebViewer] = useState(false);
   const [webUrl, setWebUrl] = useState('');
-  const [isIdeCollapsed, setIsIdeCollapsed] = useState(false);
+  // 移动端默认折叠IDE
+  const [isIdeCollapsed, setIsIdeCollapsed] = useState(true);
   const [debugCommand, setDebugCommand] = useState('npm run server');
   const [debugPort, setDebugPort] = useState('3030');
   const [showDebugConfig, setShowDebugConfig] = useState(false);
@@ -101,10 +103,18 @@ function TerminalContent() {
   // Detect mobile device
   useEffect(() => {
     const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      // 如果是移动设备，确保IDE是折叠状态
+      if (mobile) {
+        setIsIdeCollapsed(true);
+      }
     };
     
+    // 立即执行检测
     checkIsMobile();
+    
+    // 添加窗口大小变化监听
     window.addEventListener('resize', checkIsMobile);
     
     return () => {
@@ -452,10 +462,19 @@ function TerminalContent() {
   };
 
   const openWebViewer = () => {
+    // 在移动端，如果IDE处于折叠状态，先展开IDE
+    if (isMobile && isIdeCollapsed) {
+      setIsIdeCollapsed(false);
+    }
     setShowWebViewer(true);
   };
 
   const openGitTool = () => {
+    // 在移动端，如果IDE处于折叠状态，先展开IDE
+    if (isMobile && isIdeCollapsed) {
+      setIsIdeCollapsed(false);
+    }
+    
     // Check if Git tool is already open
     const existingTab = tabs.find(tab => tab.type === 'git');
     
@@ -542,6 +561,10 @@ function TerminalContent() {
   };
 
   const toggleFileExplorer = () => {
+    // 在移动端，如果IDE处于折叠状态，先展开IDE
+    if (isMobile && isIdeCollapsed) {
+      setIsIdeCollapsed(false);
+    }
     setShowFileExplorer(!showFileExplorer);
   };
 
@@ -579,14 +602,6 @@ function TerminalContent() {
       <header className="bg-gray-800 p-4 flex justify-between items-center">
         <h1 className="text-xl font-bold">AIWebStudio</h1>
         <div className="flex space-x-2">
-          {isMobile && (
-            <button 
-              onClick={toggleFileExplorer}
-              className="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded"
-            >
-              ☰
-            </button>
-          )}
           <button 
             onClick={() => setShowDebugConfig(!showDebugConfig)}
             className="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm"
@@ -643,10 +658,10 @@ function TerminalContent() {
       )}
 
       {isMobile ? (
-        // Mobile layout - vertical stack
-        <div className="flex flex-col flex-1 overflow-auto">
-          {/* Terminal Section - Top */}
-          <div className={`${isIdeCollapsed ? 'h-5/6' : 'h-1/3'} flex flex-col border-b border-gray-700`}>
+        // Mobile layout - vertical stack with flex
+        <div className="flex flex-col flex-1 overflow-auto" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 4rem)' }}>
+          {/* Terminal Section - Top (always at top) */}
+          <div className={`flex flex-col border-b border-gray-700 ${isIdeCollapsed ? 'flex-1' : 'h-1/3'}`} style={{ order: 1 }}>
             <div className="p-2 bg-gray-800 text-sm font-medium">
               Terminal
             </div>
@@ -696,8 +711,8 @@ function TerminalContent() {
             </div>
           </div>
 
-          {/* IDE Section - Bottom */}
-          <div className={`${isIdeCollapsed ? 'h-10' : 'h-2/3'} flex flex-col`}>
+          {/* IDE Section - Bottom (always at bottom) */}
+          <div className={`flex flex-col ${isIdeCollapsed ? 'h-auto' : 'h-2/3'}`} style={{ order: 2, minHeight: isIdeCollapsed ? '2.5rem' : 'auto' }}>
             <div className="p-2 bg-gray-800 text-sm font-medium flex justify-between items-center">
               <span>Online IDE</span>
               <div className="flex space-x-2">
