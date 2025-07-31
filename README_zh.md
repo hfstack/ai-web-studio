@@ -67,6 +67,12 @@ npm run dev
 - `npm run start` - 在生产模式下运行构建的应用程序
 - `npm run lint` - 运行 ESLint 检查代码问题
 - `npm run server` - 启动带终端支持的后端服务器
+- `npm run deploy` - 构建应用并启动生产服务器
+- `npm run pm2:start` - 使用 PM2 配置文件启动应用
+- `npm run pm2:stop` - 停止 PM2 管理的应用
+- `npm run pm2:restart` - 重启 PM2 管理的应用
+- `npm run pm2:delete` - 从 PM2 中移除应用
+- `npm run pm2:logs` - 显示 PM2 管理的应用日志
 
 ## 部署
 
@@ -132,10 +138,17 @@ npm run dev
    # 安装 PM2
    npm install -g pm2
    
-   # 使用 PM2 启动服务
-   pm2 start server.ts --name aiwebstudio
-   pm2 startup  # 设置开机自启
-   pm2 save     # 保存当前进程列表
+   # 使用 PM2 配置文件启动服务
+   npm run pm2:start
+   
+   # 或者直接使用配置文件
+   pm2 start ecosystem.config.js
+   
+   # 设置开机自启
+   pm2 startup
+   
+   # 保存当前进程列表
+   pm2 save
    ```
 
 10. 配置防火墙和反向代理（如 Nginx）以允许外部访问。

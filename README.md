@@ -69,6 +69,12 @@ Note: `npm run dev` only starts the frontend service, while `npm run server` sta
 - `npm run start` - Runs the built app in production mode
 - `npm run lint` - Runs ESLint to check for code issues
 - `npm run server` - Starts the backend server with terminal support
+- `npm run deploy` - Builds the app and starts the production server
+- `npm run pm2:start` - Starts the application using PM2 with ecosystem config
+- `npm run pm2:stop` - Stops the PM2 managed application
+- `npm run pm2:restart` - Restarts the PM2 managed application
+- `npm run pm2:delete` - Removes the application from PM2
+- `npm run pm2:logs` - Shows logs for the PM2 managed application
 
 ## Deployment
 
@@ -134,10 +140,17 @@ To deploy AIWebStudio to a cloud server, follow these steps:
    # Install PM2
    npm install -g pm2
    
-   # Use PM2 to start the service
-   pm2 start server.ts --name aiwebstudio
-   pm2 startup  # Set up auto-start on boot
-   pm2 save     # Save the current process list
+   # Use PM2 to start the service with ecosystem config
+   npm run pm2:start
+   
+   # Or use PM2 directly with the configuration file
+   pm2 start ecosystem.config.js
+   
+   # Set up auto-start on boot
+   pm2 startup
+   
+   # Save the current process list
+   pm2 save
    ```
 
 10. Configure firewall and reverse proxy (such as Nginx) to allow external access.
