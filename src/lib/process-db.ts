@@ -53,7 +53,15 @@ export function getAllProcesses(): Array<{
   timer_id: number | null;
 }> {
   const stmt = db.prepare('SELECT * FROM processes');
-  return stmt.all();
+  return stmt.all() as Array<{
+    port: number;
+    command: string;
+    path: string | null;
+    pid: number | null;
+    start_time: number;
+    timeout: number;
+    timer_id: number | null;
+  }>;
 }
 
 // 根据端口获取进程信息
@@ -67,7 +75,15 @@ export function getProcessByPort(port: number): {
   timer_id: number | null;
 } | null {
   const stmt = db.prepare('SELECT * FROM processes WHERE port = ?');
-  return stmt.get(port) || null;
+  return stmt.get(port) as {
+    port: number;
+    command: string;
+    path: string | null;
+    pid: number | null;
+    start_time: number;
+    timeout: number;
+    timer_id: number | null;
+  } | null;
 }
 
 // 删除进程信息
