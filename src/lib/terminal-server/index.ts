@@ -12,14 +12,14 @@ export class TerminalServer {
   createSession(projectId: string, path?: string): { sessionId: string } {
     const sessionId = Math.random().toString(36).substring(2, 15);
     // 创建 PTY 终端会话
-    const bashProcess = spawn('zsh', [], {
+    const bashProcess = spawn('bash', [], {
       name: 'xterm-256color',
       cols: 80,
       rows: 30,
       cwd: path || process.cwd(),
       env: process.env
     });
-
+    console.log('process.env:', JSON.stringify(process.env))
     this.sessions.set(sessionId, {
       id: sessionId,
       process: bashProcess,
