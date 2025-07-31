@@ -1,7 +1,7 @@
 import next from 'next';
 import { createServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
-import { TerminalServer } from './src/lib/terminal-server';
+import { TerminalServer } from './src/lib/terminal-server/index';
 import { deleteExpiredProcesses } from './src/lib/process-db';
 
 const dev = process.env.NODE_ENV !== 'production';

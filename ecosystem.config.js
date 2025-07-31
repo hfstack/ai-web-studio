@@ -1,8 +1,8 @@
 module.exports = {
   apps: [{
     name: 'edit-studio',
-    script: 'server.ts',
-    interpreter: 'node_modules/.bin/tsx',
+    script: 'build/server.js',
+    interpreter: 'node',
     env: {
       NODE_ENV: 'production',
     },
@@ -13,5 +13,10 @@ module.exports = {
     env_production: {
       NODE_ENV: 'production',
     }
-  }]
+  }],
+  deploy: {
+    production: {
+      predeploy: 'npm run build && npm run build:server',
+    }
+  }
 };

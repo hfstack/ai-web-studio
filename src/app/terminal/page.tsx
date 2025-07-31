@@ -1,5 +1,7 @@
 'use client';
 
+import { Terminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import socketIOClient from 'socket.io-client';
@@ -97,8 +99,8 @@ function TerminalContent() {
   const [showDebugConfig, setShowDebugConfig] = useState(false);
   const [isTerminalInitialized, setIsTerminalInitialized] = useState(false);
   const terminalRef = useRef<HTMLDivElement>(null);
-  const terminal = useRef<any>(null);
-  const fitAddon = useRef<any>(null);
+  const terminal = useRef<Terminal | null>(null);
+  const fitAddon = useRef<FitAddon | null>(null);
 
   // Detect mobile device
   useEffect(() => {
@@ -129,7 +131,7 @@ function TerminalContent() {
         // Small delay to ensure DOM has updated
         setTimeout(() => {
           try {
-            fitAddon.current.fit();
+            fitAddon.current?.fit();
           } catch (e) {
             console.warn('Failed to resize terminal:', e);
           }

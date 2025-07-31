@@ -106,10 +106,11 @@ export async function GET(request: Request) {
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Git operation error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An error occurred while executing git command';
     return NextResponse.json({ 
-      error: error.message || 'An error occurred while executing git command',
+      error: errorMessage,
       details: process.env.NODE_ENV === 'development' ? error : undefined
     }, { status: 500 });
   }
@@ -210,10 +211,11 @@ export async function POST(request: Request) {
     await execPromise(`git commit -m "${message}"`, { cwd: projectPath });
     
     return NextResponse.json({ success: true, action: 'commit' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Git operation error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An error occurred while executing git operation';
     return NextResponse.json({ 
-      error: error.message || 'An error occurred while executing git operation',
+      error: errorMessage,
       details: process.env.NODE_ENV === 'development' ? error : undefined
     }, { status: 500 });
   }
