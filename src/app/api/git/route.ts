@@ -73,18 +73,16 @@ export async function GET(request: Request) {
         });
         
         // Separate staged and unstaged files
-        const stagedFiles = allFiles.filter(file => 
-          file.status.startsWith('A') || 
-          file.status.startsWith('M') || 
-          file.status.startsWith('D')
-        );
+        const stagedFiles = allFiles.filter(file => {
+          // Staged files have status codes in the first position (XY where X is staged)
+          return file.status[0] !== ' ' && file.status[0] !== '?';
+        });
         
-        const unstagedFiles = allFiles.filter(file => 
-          file.status.endsWith('A') || 
-          file.status.endsWith('M') || 
-          file.status.endsWith('D') || 
-          file.status.includes('?')
-        );
+        const unstagedFiles = allFiles.filter(file => {
+          // Unstaged files have status codes in the second position (XY where Y is unstaged)
+          // or are untracked files (??)
+          return file.status[1] !== ' ' || file.status.includes('??');
+        });
         
         return NextResponse.json({ allFiles, stagedFiles, unstagedFiles });
         

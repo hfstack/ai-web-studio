@@ -23,7 +23,7 @@ app.prepare().then(() => {
     path: "/api/socket", // Custom path for socket.io
     transports: ["websocket", "polling"] // Enable both transports
   });
-
+ console.log('Initializing Socket.IO server');
   console.log('Socket.IO server initialized with path: /api/socket');
 
   // Create terminal server instance
