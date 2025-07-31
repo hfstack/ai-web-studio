@@ -2,7 +2,7 @@ module.exports = {
   apps: [{
     name: 'edit-studio',
     script: 'server.ts',
-    interpreter: './node_modules/.bin/tsx',
+    interpreter: 'node_modules/.bin/tsx',
     env: {
       NODE_ENV: 'production',
     },
