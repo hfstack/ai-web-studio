@@ -7,7 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "server": "tsx watch server.ts"
+    "server": "tsx watch server.ts",
+    "deploy": "next build && NODE_ENV=production tsx server.ts",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop ecosystem.config.js",
+    "pm2:restart": "pm2 restart ecosystem.config.js",
+    "pm2:delete": "pm2 delete ecosystem.config.js",
+    "pm2:logs": "pm2 logs edit-studio"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
