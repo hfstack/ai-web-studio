@@ -536,6 +536,27 @@ function TerminalContent() {
     }
   };
 
+  const handleArrowUp = () => {
+    if (socket && isConnected && sessionId) {
+      // Send Arrow Up character (ESC [ A) to the terminal
+      socket.emit('terminal-input', '\x1b[A');
+    }
+  };
+
+  const handleArrowDown = () => {
+    if (socket && isConnected && sessionId) {
+      // Send Arrow Down character (ESC [ B) to the terminal
+      socket.emit('terminal-input', '\x1b[B');
+    }
+  };
+
+  const handleEnter = () => {
+    if (socket && isConnected && sessionId) {
+      // Send Enter character (CR) to the terminal
+      socket.emit('terminal-input', '\r');
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-white">
       {/* Header */}
@@ -626,13 +647,36 @@ function TerminalContent() {
                   </div>
                 )}
               </div>
-              <button 
-                onClick={handleCtrlC}
-                disabled={!isConnected || !sessionId}
-                className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
-              >
-                ⌃C
-              </button>
+              <div className="flex space-x-2">
+                <button 
+                  onClick={handleArrowUp}
+                  disabled={!isConnected || !sessionId}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                >
+                  ↑
+                </button>
+                <button 
+                  onClick={handleArrowDown}
+                  disabled={!isConnected || !sessionId}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                >
+                  ↓
+                </button>
+                <button 
+                  onClick={handleEnter}
+                  disabled={!isConnected || !sessionId}
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                >
+                  ⏎
+                </button>
+                <button 
+                  onClick={handleCtrlC}
+                  disabled={!isConnected || !sessionId}
+                  className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                >
+                  ⌃C
+                </button>
+              </div>
             </div>
           </div>
 
@@ -811,13 +855,43 @@ function TerminalContent() {
                   </div>
                 )}
               </div>
-              <button 
-                onClick={handleCtrlC}
-                disabled={!isConnected || !sessionId}
-                className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
-              >
-                ⌃C
-              </button>
+              <div className="flex space-x-2">
+                <button 
+                  onClick={handleArrowUp}
+                  disabled={!isConnected || !sessionId}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                >
+                  ↑
+                </button>
+                <button 
+                  onClick={handleArrowDown}
+                  disabled={!isConnected || !sessionId}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                >
+                  ↓
+                </button>
+                <button 
+                  onClick={handleEnter}
+                  disabled={!isConnected || !sessionId}
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                >
+                  ⏎
+                </button>
+                <button 
+                  onClick={handleEnter}
+                  disabled={!isConnected || !sessionId}
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                >
+                  ⏎
+                </button>
+                <button 
+                  onClick={handleCtrlC}
+                  disabled={!isConnected || !sessionId}
+                  className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                >
+                  ⌃C
+                </button>
+              </div>
             </div>
           </div>
 
