@@ -57,7 +57,16 @@ app.prepare().then(() => {
         if (session) {
           let lastData = '';
           session.process.onData((data) => {
-            socket.emit('terminal-output', data);
+            // 如果新的data包含上一次的data，则跳过上一次的data发送
+            if (lastData && data.includes(lastData)) {
+              const newData = data.replace(lastData, '');
+              if (newData) {
+                socket.emit('terminal-output', newData);
+              }
+            } else {
+              socket.emit('terminal-output', data);
+            }
+            lastData = data;
           });
         }
         
