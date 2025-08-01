@@ -340,7 +340,7 @@ function TerminalContent() {
         newSocket.close();
       }
     };
-  }, [searchParams, sessionId, socket]); // Add searchParams, sessionId, and socket dependencies
+  }, [searchParams]); // Add searchParams, sessionId, and socket dependencies
 
   // Reconnect when navigating back to the page with an existing socket but no session
   useEffect(() => {
