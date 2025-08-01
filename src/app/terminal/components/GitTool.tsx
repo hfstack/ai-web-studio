@@ -342,7 +342,7 @@ export default function GitTool() {
       fetchGitStatus();
       fetchGitLog();
     }
-  }, [projectId, searchParams]);
+  }, [projectId, searchParams, fetchGitLog, fetchGitStatus]);
 
   if (loading && allFiles.length === 0 && commits.length === 0) {
     return <div className="p-4 text-gray-400">Loading Git data...</div>;

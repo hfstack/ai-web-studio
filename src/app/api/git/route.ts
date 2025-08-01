@@ -179,6 +179,7 @@ export async function POST(request: Request) {
             await execPromise(`git ls-files --error-unmatch "${file}"`, { cwd: projectPath });
             // File is tracked, use git checkout
             await execPromise(`git checkout HEAD -- "${file}"`, { cwd: projectPath });
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           } catch (error) {
             // File is not tracked, delete it directly
             if (fs.existsSync(fullPath)) {

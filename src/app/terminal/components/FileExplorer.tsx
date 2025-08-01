@@ -60,7 +60,8 @@ export default function FileExplorer({
     fetchDirectory(parentPath);
   };
 
-  const deleteItem = async (itemPath: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const deleteItem = async (itemPath: string) => {
     if (!projectId) return;
     
     if (!confirm(`Are you sure you want to delete ${itemPath}?`)) {
@@ -94,7 +95,7 @@ export default function FileExplorer({
     if (projectId) {
       fetchDirectory();
     }
-  }, [projectId]);
+  }, [projectId, fetchDirectory]);
 
   if (loading) {
     return <div className="p-4 text-gray-400">Loading...</div>;

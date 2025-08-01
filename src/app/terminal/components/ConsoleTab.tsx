@@ -12,7 +12,7 @@ interface ConsoleTabProps {
   onContentChange?: (content: string) => void;
 }
 
-export default function ConsoleTab({ port, title, url, initialContent, onContentChange }: ConsoleTabProps) {
+export default function ConsoleTab({ port, title, url: _, initialContent, onContentChange }: ConsoleTabProps) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const terminal = useRef<Terminal | null>(null);
   const fitAddon = useRef<FitAddon | null>(null);
@@ -115,7 +115,7 @@ export default function ConsoleTab({ port, title, url, initialContent, onContent
   // Initialize message polling for debug output
   useEffect(() => {
     let isMounted = true;
-    let pollingInterval: NodeJS.Timeout;
+    let pollingInterval: NodeJS.Timeout | null = null;
     let lastTimestamp = '';
     let emptyMessageCount = 0;
 
@@ -132,7 +132,7 @@ export default function ConsoleTab({ port, title, url, initialContent, onContent
           console.log(`Received ${data.messages.length} new messages for port ${port}`);
           
           if (terminal.current && isMounted) {
-            data.messages.forEach((msg: any) => {
+            data.messages.forEach((msg: {data: string, timestamp: string}) => {
               terminal.current?.write(msg.data);
               // 保存到terminal内容中
               terminalContent.current += msg.data;
@@ -156,7 +156,7 @@ export default function ConsoleTab({ port, title, url, initialContent, onContent
             console.log(`Stopping polling for port ${port} after 10 empty responses`);
             if (pollingInterval) {
               clearInterval(pollingInterval);
-              pollingInterval = null as any;
+              pollingInterval = null;
               setIsPolling(false);
             }
           }
@@ -181,7 +181,7 @@ export default function ConsoleTab({ port, title, url, initialContent, onContent
         terminal.current = null;
       }
     };
-  }, [port]);
+  }, [port, onContentChange]);
 
   return (
     <div className="w-full h-full bg-gray-900 flex flex-col">

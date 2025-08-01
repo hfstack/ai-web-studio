@@ -15,6 +15,7 @@ export async function POST(request: NextRequest) {
     // Check if path exists and is accessible
     try {
       await fs.promises.access(resolvedPath);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       return NextResponse.json({
         success: false,
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
         
         try {
           stats = await fs.promises.stat(itemPath);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
           // Skip files that can't be accessed
           return null;

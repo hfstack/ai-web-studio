@@ -26,7 +26,8 @@ export default function DebugManager() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshInterval, setRefreshInterval] = useState<number>(5000);
-  const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const router = useRouter();
 
   // Fetch all active processes
   const fetchProcesses = async () => {

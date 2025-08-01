@@ -47,6 +47,7 @@ export default function FolderSelector({ value, onChange, placeholder = "Select 
       } else {
         setError(data.error || 'Failed to load directory');
       }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       setError('Failed to load directory');
     } finally {
@@ -74,7 +75,7 @@ export default function FolderSelector({ value, onChange, placeholder = "Select 
     if (isOpen) {
       loadDirectory(currentPath);
     }
-  }, [isOpen]);
+  }, [isOpen, currentPath]);
 
   return (
     <div className={`relative ${className}`}>

@@ -8,8 +8,7 @@ import {
   deleteProcess, 
   getAllProcesses, 
   getProcessByPort,
-  deleteExpiredProcesses,
-  updateProcessTimerId
+  deleteExpiredProcesses
 } from '@/lib/process-db';
 
 // 进程超时时间（毫秒），默认30分钟
@@ -84,6 +83,7 @@ export async function POST(request: Request) {
     
     // Get the current IP address
     const nets = networkInterfaces();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let ipAddress = 'localhost';
     
     // Find the first non-internal IPv4 address
@@ -243,7 +243,9 @@ export async function DELETE(request: Request) {
     // 直接根据 processEntry 数据关闭进程
     try {
       // 使用 process.kill 发送终止信号给进程
-      processEntry.pid && process.kill(processEntry.pid);
+      if (processEntry.pid) {
+        process.kill(processEntry.pid);
+      }
       console.log(`Killed process with PID ${processEntry.pid} on port ${port}`);
       
       // 如果进程也在内存映射表中，清理相关资源

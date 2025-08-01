@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
     const { token, expiresAt } = await JwtService.createUserSession(user.id, user.username);
     
     // Return successful response without password
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...userWithoutPassword } = user;
     
     const response = NextResponse.json({

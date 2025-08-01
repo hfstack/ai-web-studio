@@ -5,7 +5,7 @@ export async function GET(request: NextRequest) {
   try {
     // Get token from Authorization header
     const authHeader = request.headers.get('authorization');
-    const token = JwtService.extractTokenFromHeader(authHeader);
+    const token = JwtService.extractTokenFromHeader(authHeader || undefined);
     
     if (!token) {
       // If no Authorization header, try to get from cookie
@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
         );
       }
       
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password: _, ...userWithoutPassword } = session.user;
       return NextResponse.json({
         authenticated: true,
@@ -40,7 +41,8 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const { password: _, ...userWithoutPassword } = session.user;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password: _, ...userWithoutPassword } = session.user;
     return NextResponse.json({
       authenticated: true,
       user: userWithoutPassword

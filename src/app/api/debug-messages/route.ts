@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { messageQueue } from '../debug-with-terminal/route';
+import { messageQueue } from '@/lib/process-map';
 
 export async function GET(request: Request) {
   try {
@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     }
     
     // 获取该端口的消息队列
-    const messages = messageQueue.get(String(port)) || [];
+    const messages = messageQueue.get(port) || [];
     console.log('Returning messages for port:', port, 'message count:', messages.length);
     
     // 获取客户端传递的最后读取时间戳

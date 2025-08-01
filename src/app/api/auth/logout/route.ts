@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
   try {
     // Get token from Authorization header
     const authHeader = request.headers.get('authorization');
-    const token = JwtService.extractTokenFromHeader(authHeader);
+    const token = JwtService.extractTokenFromHeader(authHeader || undefined);
     
     if (!token) {
       // If no Authorization header, try to get from cookie

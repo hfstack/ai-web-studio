@@ -14,7 +14,7 @@ export interface JwtPayload {
 export class JwtService {
   // Generate JWT token
   static generateToken(payload: Omit<JwtPayload, 'iat' | 'exp'>): string {
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'] });
   }
   
   // Verify JWT token
@@ -22,6 +22,7 @@ export class JwtService {
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
       return decoded;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       return null;
     }

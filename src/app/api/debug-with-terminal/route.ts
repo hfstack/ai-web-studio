@@ -1,3 +1,4 @@
+import { exec } from 'child_process';
 import { NextResponse } from 'next/server';
 import { spawn, IPty } from 'node-pty';
 import { networkInterfaces } from 'os';
@@ -7,30 +8,15 @@ import {
   deleteProcess, 
   getAllProcesses, 
   getProcessByPort,
-  deleteExpiredProcesses,
-  updateProcessTimerId
+  deleteExpiredProcesses
 } from '@/lib/process-db';
-import { Server as NetServer } from 'http';
 import { NextRequest } from 'next/server';
 import { Server as ServerIO } from 'socket.io';
 
 // 进程超时时间（毫秒），默认30分钟
 const PROCESS_TIMEOUT = 30 * 60 * 1000;
 
-// 全局进程映射表，用于跟踪所有启动的进程和它们的计时器
-interface ProcessInfo {
-  process: IPty;
-  timer: NodeJS.Timeout;
-  startTime: number;
-  socket: any; // Socket.IO instance for this process
-  outputBuffer: string[]; // Buffer to store output until socket is connected
-}
-
-// 导出processMap以便其他模块访问
-export const processMap: Map<number, ProcessInfo> = new Map();
-
-// 全局消息队列，用于存储待发送的消息
-export const messageQueue: Map<number, Array<{data: string, timestamp: string}>> = new Map();
+import { processMap, messageQueue, ProcessInfo } from '@/lib/process-map';
 
 // 初始化数据库
 initializeDatabase();
@@ -38,7 +24,7 @@ initializeDatabase();
 // 启动时检查并清理可能存在的僵尸进程和过期数据
 function cleanupZombieProcesses() {
   console.log('Checking for zombie processes...');
-  require('child_process').exec('ps aux | grep node', (error: any, stdout: string) => {
+  exec('ps aux | grep node', (error, stdout) => {
     if (error) {
       console.error('Error checking processes:', error);
       return;
@@ -52,9 +38,10 @@ function cleanupZombieProcesses() {
 }
 
 // 获取Socket.IO服务器实例（简化版本）
-const getSocketServer = (req: NextRequest) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const getSocketServer = (req: NextRequest): ServerIO | null => {
   // 尝试从全局变量获取
-  const globalSocket = (global as any).socketIO;
+  const globalSocket = (global as unknown as { socketIO?: ServerIO }).socketIO;
   return globalSocket || null;
 };
 
@@ -103,6 +90,7 @@ export async function POST(request: NextRequest) {
     
     // Get the current IP address
     const nets = networkInterfaces();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let ipAddress = 'localhost';
     
     // Find the first non-internal IPv4 address
@@ -323,7 +311,9 @@ export async function DELETE(request: Request) {
     // 直接根据 processEntry 数据关闭进程
     try {
       // 使用 process.kill 发送终止信号给进程
-      processEntry.pid && process.kill(processEntry.pid);
+      if (processEntry.pid) {
+        process.kill(processEntry.pid);
+      }
       console.log(`Killed process with PID ${processEntry.pid} on port ${port}`);
       
       // 如果进程也在内存映射表中，清理相关资源

@@ -32,12 +32,13 @@ export async function POST(request: Request) {
         success: false, 
         error: `Directory ${repoName} already exists in ${clonePath}` 
       }, { status: 400 });
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       // 目录不存在，可以继续
     }
     
     // 执行git clone命令
-    const { stdout, stderr } = await execAsync(`git clone ${githubUrl} ${fullClonePath}`);
+    const { stderr } = await execAsync(`git clone ${githubUrl} ${fullClonePath}`);
     
     if (stderr && !stderr.includes('Cloning into')) {
       // Git可能会在stderr中输出一些非错误信息，如"Cloning into..."

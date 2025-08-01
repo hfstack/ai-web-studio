@@ -56,7 +56,8 @@ export class AuthDatabase {
     
     const result = stmt.run(username, hashedPassword, email || null);
     
-    return this.getUserById(result.lastInsertRowid as number);
+    const user = this.getUserById(result.lastInsertRowid as number);
+    return user!;
   }
   
   // Get user by username

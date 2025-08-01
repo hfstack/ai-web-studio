@@ -24,7 +24,8 @@ export default function HomePage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [debugCommand, setDebugCommand] = useState('npm run serve');
   const [debugPort, setDebugPort] = useState('3010');
-  const [showDebugConfig, setShowDebugConfig] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [showDebugConfig, setShowDebugConfig] = useState(false);
 
   // Load projects from localStorage on component mount
   useEffect(() => {

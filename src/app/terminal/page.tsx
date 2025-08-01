@@ -101,7 +101,8 @@ function TerminalContent() {
   // 移动端默认折叠IDE
   const [isIdeCollapsed, setIsIdeCollapsed] = useState(true);
   const [debugPort, setDebugPort] = useState('3030');
-  const [showDebugConfig, setShowDebugConfig] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [showDebugConfig, setShowDebugConfig] = useState(false);
   const [isTerminalInitialized, setIsTerminalInitialized] = useState(false);
   const [projectCommand, setProjectCommand] = useState('');
   const [availableScripts, setAvailableScripts] = useState<{key: string, command: string}[]>([]);
@@ -339,7 +340,7 @@ function TerminalContent() {
         newSocket.close();
       }
     };
-  }, []); // Empty dependency array to run only once
+  }, [searchParams, sessionId, socket]); // Add searchParams, sessionId, and socket dependencies
 
   // Reconnect when navigating back to the page with an existing socket but no session
   useEffect(() => {

@@ -10,7 +10,7 @@ export const config = {
 
 const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
   // Check if Socket.IO is already initialized globally
-  if (!(global as any).socketIO) {
+  if (!(global as unknown as { socketIO?: ServerIO }).socketIO) {
     console.log("Initializing Socket.IO server globally");
     
     // Get the HTTP server instance
@@ -32,14 +32,14 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
       console.log("Client connected:", socket.id);
 
       // Handle joining debug rooms
-      socket.on("join-debug-room", (data) => {
+      socket.on("join-debug-room", async (data) => {
         const { port } = data;
         const roomName = `debug-${port}`;
         socket.join(roomName);
         console.log(`Socket ${socket.id} joined room ${roomName}`);
         
         // Store socket reference in debug process map
-        const { processMap } = require('./debug-with-terminal/route');
+        const { processMap } = await import('@/lib/process-map');
         console.log(`Looking for process in map for port ${port}, map exists:`, !!processMap, 'has port:', processMap?.has(port));
         if (processMap && processMap.has(port)) {
           const processInfo = processMap.get(port);
@@ -80,7 +80,7 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
     // Store Socket.IO instance globally and on the server
     // @ts-expect-error - res.socket.server is not typed correctly in Next.js
     res.socket.server.io = io;
-    (global as any).socketIO = io;
+    (global as unknown as { socketIO?: ServerIO }).socketIO = io;
     
     // Return socket id for client to use
     res.status(200).json({ 

@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { IPty } from 'node-pty';
 import path from 'path';
 

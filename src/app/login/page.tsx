@@ -24,6 +24,7 @@ export default function LoginPage() {
       } else {
         setError('Invalid username or password');
       }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       setError('Login failed, please try again later');
     } finally {
