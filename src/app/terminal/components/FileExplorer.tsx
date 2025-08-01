@@ -95,7 +95,7 @@ export default function FileExplorer({
     if (projectId) {
       fetchDirectory();
     }
-  }, [projectId, fetchDirectory]);
+  }, [projectId]);
 
   if (loading) {
     return <div className="p-4 text-gray-400">Loading...</div>;
