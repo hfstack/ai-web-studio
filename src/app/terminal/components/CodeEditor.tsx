@@ -150,7 +150,7 @@ export default function CodeEditor({
     if (filePath) {
       fetchFile();
     }
-  }, [filePath, fetchFile]);
+  }, [filePath]);
 
   if (loading) {
     return <div className="p-4 text-gray-400">Loading file...</div>;
