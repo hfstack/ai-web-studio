@@ -19,7 +19,6 @@ export class TerminalServer {
       cwd: path || process.cwd(),
       env: process.env
     });
-    console.log('process.env:', JSON.stringify(process.env))
     this.sessions.set(sessionId, {
       id: sessionId,
       process: bashProcess,

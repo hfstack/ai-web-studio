@@ -8,16 +8,19 @@ import socketIOClient from 'socket.io-client';
 import FileExplorer from './components/FileExplorer';
 import CodeEditor from './components/CodeEditor';
 import GitTool from './components/GitTool';
+import ConsoleTab from './components/ConsoleTab';
+import DebugModal from './components/DebugModal';
 import { AuthGuard } from '@/components/AuthGuard';
 import { useAuth } from '@/contexts/AuthContext';
 
 // Tab type
 type Tab = {
   id: string;
-  type: 'file' | 'web' | 'git';
+  type: 'file' | 'web' | 'git' | 'console';
   title: string;
   path?: string; // For file tabs
   url?: string;  // For web tabs
+  port?: number; // For console tabs
 };
 
 // WebTabTitle component for editing web tab URLs
@@ -97,13 +100,16 @@ function TerminalContent() {
   const [webUrl, setWebUrl] = useState('');
   // 移动端默认折叠IDE
   const [isIdeCollapsed, setIsIdeCollapsed] = useState(true);
-  const [debugCommand, setDebugCommand] = useState('npm run server');
   const [debugPort, setDebugPort] = useState('3030');
   const [showDebugConfig, setShowDebugConfig] = useState(false);
   const [isTerminalInitialized, setIsTerminalInitialized] = useState(false);
+  const [projectCommand, setProjectCommand] = useState('');
+  const [availableScripts, setAvailableScripts] = useState<{key: string, command: string}[]>([]);
+  const [showDebugModal, setShowDebugModal] = useState(false);
   const terminalRef = useRef<HTMLDivElement>(null);
   const terminal = useRef<Terminal | null>(null);
   const fitAddon = useRef<FitAddon | null>(null);
+  const consoleContentCache = useRef<Map<number, string>>(new Map());
 
   // Detect mobile device
   useEffect(() => {
@@ -362,14 +368,45 @@ function TerminalContent() {
     }
   }, [searchParams]);
 
-  // Load saved debug settings
+  // Load project package.json to get all scripts
   useEffect(() => {
-    const savedCommand = localStorage.getItem('debugCommand');
-    const savedPort = localStorage.getItem('debugPort');
+    const loadProjectScripts = async () => {
+      const currentProjectId = searchParams.get('projectId');
+      const projectRoot = localStorage.getItem(currentProjectId || '')?.split('project_')[1] || ''; 
+      
+      if (projectRoot) {
+        try {
+          const response = await fetch(`/api/files?projectId=${currentProjectId}&path=${encodeURIComponent(`package.json`)}&projectRoot=${encodeURIComponent(projectRoot)}`, {
+            method: 'GET',
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.content) {
+              const packageJson = JSON.parse(data.content);
+              const scripts = packageJson.scripts || {};
+              
+              // Convert scripts object to array of {key, command}
+              const scriptsArray = Object.entries(scripts).map(([key, command]) => ({
+                key,
+                command: command as string
+              }));
+              
+              setAvailableScripts(scriptsArray);
+              
+              // Set default command (start > dev > serve > first available)
+              const defaultCommand = scripts.start || scripts.dev || scripts.serve || scriptsArray[0]?.command || '';
+              setProjectCommand(defaultCommand);
+            }
+          }
+        } catch (error) {
+          console.error('Error loading package.json:', error);
+        }
+      }
+    };
     
-    if (savedCommand) setDebugCommand(savedCommand);
-    if (savedPort) setDebugPort(savedPort);
-  }, []);
+    loadProjectScripts();
+  }, [searchParams]);
 
   const handleGoHome = () => {
     router.push('/');
@@ -400,18 +437,24 @@ function TerminalContent() {
 
   const handleDebugCommand = async () => {
     try {
-      // Save settings to localStorage
-      localStorage.setItem('debugCommand', debugCommand);
-      localStorage.setItem('debugPort', debugPort);
       const currentProjectId = searchParams.get('projectId');
       const projectRoot = localStorage.getItem(currentProjectId || '')?.split('project_')[1] || ''; 
-      const response = await fetch('/api/debug', {
+      
+      // Get command from package.json or use empty string
+      let command = projectCommand;
+      
+      // Add port parameter if port is specified
+      if (debugPort && command) {
+        command = `${command} --port ${debugPort}`;
+      }
+      
+      const response = await fetch('/api/debug-with-terminal', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          command: debugCommand,
+          command: command,
           port: debugPort,
           path: projectRoot
         }),
@@ -423,22 +466,40 @@ function TerminalContent() {
         // Set webUrl and directly create a new tab for the web page
         const url = data.url;
         
-        // Create new tab directly instead of just setting webUrl
-        const newTab: Tab = {
+        // Create new tab for web page
+        const webTab: Tab = {
           id: `web-${Date.now()}`,
           type: 'web',
           title: url.replace(/^https?:\/\//, '').split('/')[0],
           url: url
         };
         
-        setTabs(prev => [...prev, newTab]);
-        setActiveTabId(newTab.id);
+        // Create new tab for console output
+        const consoleTab: Tab = {
+          id: `console-${Date.now()}`,
+          type: 'console',
+          title: `Console Port ${debugPort}`,
+          url: url,
+          port: parseInt(debugPort)
+        };
+        
+        setTabs(prev => [...prev, webTab, consoleTab]);
+        setActiveTabId(consoleTab.id);
+        setShowDebugModal(false); // Close modal after successful run
       } else {
         console.error('Failed to run debug command:', data.error);
       }
     } catch (error) {
       console.error('Error running debug command:', error);
     }
+  };
+
+  const handleOpenDebugModal = () => {
+    setShowDebugModal(true);
+  };
+
+  const handleCloseDebugModal = () => {
+    setShowDebugModal(false);
   };
 
   const handleFileSelect = (filePath: string) => {
@@ -546,7 +607,13 @@ function TerminalContent() {
 
   const closeTab = (tabId: string) => {
     setTabs(prev => {
+      const closedTab = prev.find(tab => tab.id === tabId);
       const newTabs = prev.filter(tab => tab.id !== tabId);
+      
+      // Clear console cache if closing a console tab
+      if (closedTab?.type === 'console' && closedTab.port) {
+        consoleContentCache.current.delete(closedTab.port);
+      }
       
       // If we're closing the active tab, switch to another tab
       if (tabId === activeTabId) {
@@ -611,7 +678,7 @@ function TerminalContent() {
         </div>
         <div className="flex space-x-2">
           <button 
-            onClick={() => setShowDebugConfig(!showDebugConfig)}
+            onClick={handleOpenDebugModal}
             className="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm"
           >
             Debug
@@ -637,39 +704,17 @@ function TerminalContent() {
         </div>
       </header>
 
-      {/* Debug Configuration Panel */}
-      {showDebugConfig && (
-        <div className="bg-gray-800 p-4 border-b border-gray-700">
-          <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium mb-1">Command</label>
-              <input
-                type="text"
-                value={debugCommand}
-                onChange={(e) => setDebugCommand(e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium mb-1">Port</label>
-              <input
-                type="number"
-                value={debugPort}
-                onChange={(e) => setDebugPort(e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex items-end">
-              <button
-                onClick={handleDebugCommand}
-                className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 rounded font-medium"
-              >
-                Run
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Debug Modal */}
+      <DebugModal
+        isOpen={showDebugModal}
+        onClose={handleCloseDebugModal}
+        projectCommand={projectCommand}
+        setProjectCommand={setProjectCommand}
+        debugPort={debugPort}
+        setDebugPort={setDebugPort}
+        availableScripts={availableScripts}
+        onRunDebug={handleDebugCommand}
+      />
 
       {isMobile ? (
         // Mobile layout - vertical stack with flex
@@ -772,7 +817,7 @@ function TerminalContent() {
                         }`}
                         onClick={() => setActiveTabId(tab.id)}
                       >
-                        <span className="mr-2">{tab.type === 'file' ? '📄' : tab.type === 'web' ? '🌐' : 'Git'}</span>
+                        <span className="mr-2">{tab.type === 'file' ? '📄' : tab.type === 'web' ? '🌐' : tab.type === 'console' ? '🖥️' : 'Git'}</span>
                         {tab.type === 'web' ? (
                           <WebTabTitle 
                             title={tab.title} 
@@ -862,6 +907,16 @@ function TerminalContent() {
                             title={activeTab.title}
                           />
                         </div>
+                      ) : activeTab.type === 'console' && activeTab.port ? (
+                        <ConsoleTab 
+                          port={activeTab.port}
+                          title={activeTab.title}
+                          url={activeTab.url || ''}
+                          initialContent={consoleContentCache.current.get(activeTab.port) || ''}
+                          onContentChange={(content) => {
+                            consoleContentCache.current.set(activeTab.port!, content);
+                          }}
+                        />
                       ) : activeTab.type === 'git' ? (
                         <div className="w-full h-full">
                           <GitTool />
@@ -971,7 +1026,7 @@ function TerminalContent() {
                     }`}
                     onClick={() => setActiveTabId(tab.id)}
                   >
-                    <span className="mr-2">{tab.type === 'file' ? '📄' : tab.type === 'web' ? '🌐' : 'Git'}</span>
+                    <span className="mr-2">{tab.type === 'file' ? '📄' : tab.type === 'web' ? '🌐' : tab.type === 'console' ? '🖥️' : 'Git'}</span>
                     {tab.type === 'web' ? (
                       <WebTabTitle 
                         title={tab.title} 
@@ -1046,6 +1101,16 @@ function TerminalContent() {
                         src={activeTab.url} 
                         className="w-full h-full"
                         title={activeTab.title}
+                      />
+                    ) : activeTab.type === 'console' && activeTab.port ? (
+                      <ConsoleTab 
+                        port={activeTab.port}
+                        title={activeTab.title}
+                        url={activeTab.url || ''}
+                        initialContent={consoleContentCache.current.get(activeTab.port) || ''}
+                        onContentChange={(content) => {
+                          consoleContentCache.current.set(activeTab.port!, content);
+                        }}
                       />
                     ) : activeTab.type === 'git' ? (
                       <div className="w-full h-full">
