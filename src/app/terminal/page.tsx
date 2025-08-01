@@ -8,6 +8,8 @@ import socketIOClient from 'socket.io-client';
 import FileExplorer from './components/FileExplorer';
 import CodeEditor from './components/CodeEditor';
 import GitTool from './components/GitTool';
+import { AuthGuard } from '@/components/AuthGuard';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Tab type
 type Tab = {
@@ -79,6 +81,7 @@ function WebTabTitle({ title, url, onUpdateUrl }: {
 }
 
 function TerminalContent() {
+  const { logout, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [socket, setSocket] = useState<ReturnType<typeof socketIOClient> | null>(null);
@@ -602,7 +605,10 @@ function TerminalContent() {
     <div className="flex flex-col h-screen bg-gray-900 text-white">
       {/* Header */}
       <header className="bg-gray-800 p-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold">AIWebStudio</h1>
+        <div className="flex items-center space-x-4">
+          <h1 className="text-xl font-bold">AIWebStudio</h1>
+          <span className="text-sm text-gray-400">Welcome, {user?.username}</span>
+        </div>
         <div className="flex space-x-2">
           <button 
             onClick={() => setShowDebugConfig(!showDebugConfig)}
@@ -621,6 +627,12 @@ function TerminalContent() {
             className="bg-gray-700 hover:bg-gray-600 text-white py-1 px-3 rounded text-sm"
           >
             Home
+          </button>
+          <button 
+            onClick={logout}
+            className="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-sm"
+          >
+            Logout
           </button>
         </div>
       </header>
@@ -1057,8 +1069,10 @@ function TerminalContent() {
 
 export default function TerminalPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <TerminalContent />
-    </Suspense>
+    <AuthGuard>
+      <Suspense fallback={<div>Loading...</div>}>
+        <TerminalContent />
+      </Suspense>
+    </AuthGuard>
   );
 }

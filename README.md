@@ -17,6 +17,9 @@ AIWebStudio is a web-based integrated development environment that allows you to
 - **Git Integration**: Commit changes, view diffs, and check commit history without leaving the browser
 - **Debug Configuration**: Run debug commands and preview applications on custom ports
 - **Process Manager**: View and manage application processes started through the debug feature
+- **Folder Selection**: Visual folder browser with intuitive navigation and selection
+- **Environment Configuration**: Secure authentication with customizable admin credentials
+- **Responsive Design**: Optimized for both desktop and mobile devices
 
 ## Screenshots
 
@@ -48,6 +51,27 @@ First, install the dependencies:
 npm install
 ```
 
+### Environment Configuration
+
+The application uses environment variables for authentication configuration. Copy the example file to create your local configuration:
+
+```bash
+cp .env.example .env.local
+```
+
+Edit `.env.local` to customize your admin credentials:
+
+```bash
+# Default admin user credentials
+DEFAULT_ADMIN_USERNAME=your_admin_username
+DEFAULT_ADMIN_PASSWORD=your_secure_password
+DEFAULT_ADMIN_EMAIL=your_email@example.com
+
+# JWT Configuration
+JWT_SECRET=your-secret-key-change-in-production
+JWT_EXPIRES_IN=24h
+```
+
 Then, run the development server:
 
 ```bash
@@ -61,6 +85,14 @@ npm run dev
 Open [http://localhost:3010](http://localhost:3010) with your browser to see the application. (The backend server runs on port 3010 by default)
 
 Note: `npm run dev` only starts the frontend service, while `npm run server` starts the complete backend service with terminal functionality.
+
+### Default Login
+
+The application creates a default admin user automatically. You can customize these credentials in your `.env.local` file:
+
+- **Default Username**: `admin`
+- **Default Password**: `admin123`
+- **Default Email**: `admin@example.com`
 
 ## Available Scripts
 
@@ -114,15 +146,24 @@ To deploy AIWebStudio to a cloud server, follow these steps:
    ```
 
 6. Configure environment variables:
-   Create a `.env` file and add the necessary API keys:
+   Create a `.env.local` file and add the necessary API keys:
    ```bash
+   # Default admin user credentials
+   DEFAULT_ADMIN_USERNAME=your_admin_username
+   DEFAULT_ADMIN_PASSWORD=your_secure_password
+   DEFAULT_ADMIN_EMAIL=your_email@example.com
+
+   # JWT Configuration
+   JWT_SECRET=your-secret-key-change-in-production
+   JWT_EXPIRES_IN=24h
+
    # Qwen API configuration
-   export OPENAI_API_KEY="your_qwen_api_key_here"
-   export OPENAI_BASE_URL="https://dashscope.aliyuncs.com/compatible-mode/v1"
-   export OPENAI_MODEL="qwen3-coder-plus"
+   OPENAI_API_KEY="your_qwen_api_key_here"
+   OPENAI_BASE_URL="https://dashscope.aliyuncs.com/compatible-mode/v1"
+   OPENAI_MODEL="qwen3-coder-plus"
    
    # If using Gemini, configure the appropriate API key
-   export GOOGLE_API_KEY="your_google_api_key_here"
+   GOOGLE_API_KEY="your_google_api_key_here"
    ```
 
 7. Build the project:
@@ -172,17 +213,44 @@ AIWebStudio should now be running on your cloud server. Make sure you have prope
 
 ## How to Use
 
-1. **Home Page**: Start by either opening an existing project, cloning a GitHub repository, or opening a default terminal.
+### 1. Authentication
+- Login using the default admin credentials or your custom credentials from `.env.local`
+- The application uses JWT tokens for authentication with secure session management
 
-2. **Terminal**: The terminal provides a full-featured command line interface. You can run any command that would normally work in your system terminal.
+### 2. Home Page
+- **Open Project**: Browse and select an existing project folder using the folder selector
+- **Create Project**: Clone a GitHub repository by providing the repository URL and storage path
+- **Terminal**: Open a default terminal session for system-level operations
 
-3. **File Management**: Use the file explorer to navigate your project files. Double-click on any file to open it in the code editor.
+### 3. Folder Selection
+- Click the 📁 icon to open the folder browser
+- Navigate through directories using the file explorer interface
+- Select folders by clicking "Select Current Folder" or double-clicking to navigate
 
-4. **Code Editing**: The built-in code editor supports multiple programming languages with syntax highlighting.
+### 4. Terminal
+- The terminal provides a full-featured command line interface
+- You can run any command that would normally work in your system terminal
+- Real-time output display with proper ANSI color support
 
-5. **Git Integration**: Use the Git tool to stage, commit, and view your changes. You can also see commit history and file diffs.
+### 5. File Management
+- Use the file explorer to navigate your project files
+- Double-click on any file to open it in the code editor
+- Create, rename, and delete files and folders
 
-6. **Web Viewer**: Preview web applications by entering a URL or using the debug feature to run and preview applications on custom ports.
+### 6. Code Editing
+- The built-in code editor supports multiple programming languages with syntax highlighting
+- Features include code completion, error highlighting, and multi-cursor editing
+- Auto-save functionality to prevent data loss
+
+### 7. Git Integration
+- Use the Git tool to stage, commit, and view your changes
+- See commit history and file diffs
+- Push and pull operations with remote repositories
+
+### 8. Web Viewer
+- Preview web applications by entering a URL
+- Use the debug feature to run and preview applications on custom ports
+- Integrated browser for testing web applications
 
 ## AI Tools Usage
 

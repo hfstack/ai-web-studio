@@ -15,6 +15,9 @@ AIWebStudio 是一个基于 Web 的集成开发环境，允许您在浏览器中
 - **Git 集成**：在不离开浏览器的情况下提交更改、查看差异和检查提交历史
 - **调试配置**：运行调试命令并在自定义端口上预览应用程序
 - **进程管理器**：查看和管理通过调试功能启动的应用进程
+- **文件夹选择**：可视化文件夹浏览器，具有直观的导航和选择功能
+- **环境配置**：安全认证，可自定义管理员凭据
+- **响应式设计**：针对桌面和移动设备进行了优化
 
 ## 界面截图
 
@@ -46,6 +49,27 @@ AIWebStudio 采用全响应式设计，在桌面和移动设备上都提供优�
 npm install
 ```
 
+### 环境配置
+
+应用程序使用环境变量进行身份验证配置。复制示例文件来创建您的本地配置：
+
+```bash
+cp .env.example .env.local
+```
+
+编辑 `.env.local` 来自定义您的管理员凭据：
+
+```bash
+# 默认管理员用户凭据
+DEFAULT_ADMIN_USERNAME=your_admin_username
+DEFAULT_ADMIN_PASSWORD=your_secure_password
+DEFAULT_ADMIN_EMAIL=your_email@example.com
+
+# JWT 配置
+JWT_SECRET=your-secret-key-change-in-production
+JWT_EXPIRES_IN=24h
+```
+
 然后，运行开发服务器：
 
 ```bash
@@ -59,6 +83,14 @@ npm run dev
 在浏览器中打开 [http://localhost:3010](http://localhost:3010) 查看应用程序。（后端服务默认运行在 3010 端口）
 
 注意：`npm run dev` 只启动前端服务，而 `npm run server` 启动包含终端功能的完整后端服务。
+
+### 默认登录
+
+应用程序会自动创建一个默认管理员用户。您可以在 `.env.local` 文件中自定义这些凭据：
+
+- **默认用户名**：`admin`
+- **默认密码**：`admin123`
+- **默认邮箱**：`admin@example.com`
 
 ## 可用脚本
 
@@ -112,15 +144,24 @@ npm run dev
    ```
 
 6. 配置环境变量：
-   创建 `.env` 文件并添加必要的 API 密钥：
+   创建 `.env.local` 文件并添加必要的 API 密钥：
    ```bash
+   # 默认管理员用户凭据
+   DEFAULT_ADMIN_USERNAME=your_admin_username
+   DEFAULT_ADMIN_PASSWORD=your_secure_password
+   DEFAULT_ADMIN_EMAIL=your_email@example.com
+
+   # JWT 配置
+   JWT_SECRET=your-secret-key-change-in-production
+   JWT_EXPIRES_IN=24h
+
    # Qwen API 配置
-   export OPENAI_API_KEY="your_qwen_api_key_here"
-   export OPENAI_BASE_URL="https://dashscope.aliyuncs.com/compatible-mode/v1"
-   export OPENAI_MODEL="qwen3-coder-plus"
+   OPENAI_API_KEY="your_qwen_api_key_here"
+   OPENAI_BASE_URL="https://dashscope.aliyuncs.com/compatible-mode/v1"
+   OPENAI_MODEL="qwen3-coder-plus"
    
    # 如果使用 Gemini，配置相应的 API 密钥
-   export GOOGLE_API_KEY="your_google_api_key_here"
+   GOOGLE_API_KEY="your_google_api_key_here"
    ```
 
 7. 构建项目：
@@ -170,17 +211,44 @@ npm run dev
 
 ## 使用方法
 
-1. **主页**：首先打开现有项目、克隆 GitHub 仓库或打开默认终端。
+### 1. 身份验证
+- 使用默认管理员凭据或您在 `.env.local` 中的自定义凭据登录
+- 应用程序使用 JWT 令牌进行身份验证，具有安全的会话管理
 
-2. **终端**：终端提供全功能的命令行界面。您可以运行任何在系统终端中正常工作的命令。
+### 2. 主页
+- **打开项目**：使用文件夹选择器浏览并选择现有项目文件夹
+- **创建项目**：通过提供仓库 URL 和存储路径来克隆 GitHub 仓库
+- **终端**：打开默认终端会话进行系统级操作
 
-3. **文件管理**：使用文件浏览器导航项目文件。双击任何文件以在代码编辑器中打开它。
+### 3. 文件夹选择
+- 点击 📁 图标打开文件夹浏览器
+- 使用文件浏览器界面浏览目录
+- 通过点击"选择当前文件夹"或双击导航来选择文件夹
 
-4. **代码编辑**：内置代码编辑器支持多种编程语言并具有语法高亮功能。
+### 4. 终端
+- 终端提供全功能的命令行界面
+- 您可以运行任何在系统终端中正常工作的命令
+- 实时输出显示，支持正确的 ANSI 颜色
 
-5. **Git 集成**：使用 Git 工具暂存、提交和查看更改。您还可以查看提交历史和文件差异。
+### 5. 文件管理
+- 使用文件浏览器导航项目文件
+- 双击任何文件以在代码编辑器中打开它
+- 创建、重命名和删除文件和文件夹
 
-6. **网页查看器**：通过输入 URL 或使用调试功能在自定义端口上运行和预览网页应用程序。
+### 6. 代码编辑
+- 内置代码编辑器支持多种编程语言，具有语法高亮功能
+- 功能包括代码补全、错误高亮和多光标编辑
+- 自动保存功能以防止数据丢失
+
+### 7. Git 集成
+- 使用 Git 工具暂存、提交和查看更改
+- 查看提交历史和文件差异
+- 与远程仓库进行推送和拉取操作
+
+### 8. 网页查看器
+- 通过输入 URL 预览网页应用程序
+- 使用调试功能在自定义端口上运行和预览应用程序
+- 用于测试网页应用程序的集成浏览器
 
 ## AI 工具使用
 

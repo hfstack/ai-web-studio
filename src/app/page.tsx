@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { AuthGuard } from '@/components/AuthGuard';
+import FolderSelector from '@/components/FolderSelector';
 
 type Project = {
   id: string;
@@ -11,6 +14,7 @@ type Project = {
 };
 
 export default function HomePage() {
+  const { logout, user } = useAuth();
   const router = useRouter();
   const [projectPath, setProjectPath] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
@@ -122,7 +126,7 @@ export default function HomePage() {
         }
         
         // Store the project path in localStorage
-        localStorage.setItem(projectId,`project_${data.path}`);
+        localStorage.setItem(projectId, `project_${data.path}`);
         
         // Redirect to terminal with the cloned project
         router.push(`/terminal?path=${encodeURIComponent(data.path)}&projectId=${projectId}&action=open`);
@@ -180,161 +184,166 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4">
-      <div className="max-w-4xl w-full space-y-8">
-        <div className="text-center relative">
-          <h1 className="text-4xl font-bold mb-2">AIWebStudio</h1>
-          <p className="text-gray-400">Develop with AI assistants anywhere, anytime</p>
-          <div className="absolute top-0 right-0 flex gap-2">
-            <a 
-              href="/debug-manager"
-              className="bg-purple-600 hover:bg-purple-700 text-white py-1 px-3 rounded text-sm"
-            >
-              Manage
-            </a>
-          </div>
-        </div>
-
-        {/* Debug Configuration Panel */}
-        {showDebugConfig && (
-          <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
-            <h2 className="text-2xl font-bold mb-4">Debug Configuration</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Command</label>
-                <input
-                  type="text"
-                  value={debugCommand}
-                  onChange={(e) => setDebugCommand(e.target.value)}
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Port</label>
-                <input
-                  type="number"
-                  value={debugPort}
-                  onChange={(e) => setDebugPort(e.target.value)}
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+    <AuthGuard>
+      <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4">
+        <div className="max-w-4xl w-full space-y-8">
+          <div className="text-center relative">
+            <h1 className="text-4xl font-bold mb-2">AIWebStudio</h1>
+            <p className="text-gray-400">Develop with AI assistants anywhere, anytime</p>
+            <div className="absolute top-0 right-0 flex gap-2 items-center">
+              <span className="text-sm text-gray-400">Welcome, {user?.username}</span>
               <button
-                onClick={handleDebugCommand}
-                className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 rounded font-medium"
+                onClick={logout}
+                className="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-sm"
               >
-                Run Debug Command
+                Logout
               </button>
-            </div>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Open Project Card */}
-          <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
-            <h2 className="text-2xl font-bold mb-4">Open Project</h2>
-            <p className="text-gray-400 mb-4">Open an existing project from your local filesystem</p>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Project Path</label>
-                <input
-                  type="text"
-                  value={projectPath}
-                  onChange={(e) => setProjectPath(e.target.value)}
-                  placeholder="/path/to/your/project"
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <button
-                onClick={handleOpenProject}
-                disabled={!projectPath}
-                className={`w-full py-2 px-4 rounded font-medium ${
-                  projectPath 
-                    ? 'bg-blue-600 hover:bg-blue-700' 
-                    : 'bg-gray-700 cursor-not-allowed'
-                }`}
+              <a 
+                href="/debug-manager"
+                className="bg-purple-600 hover:bg-purple-700 text-white py-1 px-3 rounded text-sm"
               >
-                Open Project
-              </button>
+                Manage
+              </a>
             </div>
           </div>
 
-          {/* Create Project Card */}
-          <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
-            <h2 className="text-2xl font-bold mb-4">Create Project</h2>
-            <p className="text-gray-400 mb-4">Clone a project from GitHub</p>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">GitHub Repository URL</label>
-                <input
-                  type="text"
-                  value={githubUrl}
-                  onChange={(e) => setGithubUrl(e.target.value)}
-                  placeholder="https://github.com/user/repo.git"
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Storage Path</label>
-                <input
-                  type="text"
-                  value={clonePath}
-                  onChange={(e) => setClonePath(e.target.value)}
-                  placeholder="/path/to/store/repository"
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              {cloneError && (
-                <div className="text-red-400 text-sm">{cloneError}</div>
-              )}
-              <button
-                onClick={handleCloneProject}
-                disabled={!githubUrl || !clonePath || isCloning}
-                className={`w-full py-2 px-4 rounded font-medium ${
-                  githubUrl && clonePath && !isCloning
-                    ? 'bg-green-600 hover:bg-green-700' 
-                    : 'bg-gray-700 cursor-not-allowed'
-                }`}
-              >
-                {isCloning ? 'Cloning...' : 'Clone from GitHub'}
-              </button>
-            </div>
-          </div>
-
-          {/* Default Terminal Card */}
-          <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
-            <h2 className="text-2xl font-bold mb-4">Terminal</h2>
-            <p className="text-gray-400 mb-4">Open a default terminal session</p>
-            <button
-              onClick={handleDefaultTerminal}
-              className="w-full py-2 px-4 bg-purple-600 hover:bg-purple-700 rounded font-medium"
-            >
-              Open Terminal
-            </button>
-          </div>
-        </div>
-
-        {/* Recent Projects Section */}
-        {projects.length > 0 && (
-          <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
-            <h2 className="text-2xl font-bold mb-4">Recent Projects</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {projects.map((project) => (
-                <div 
-                  key={project.id}
-                  className="bg-gray-700 rounded p-4 hover:bg-gray-600 cursor-pointer transition-colors"
-                  onClick={() => handleOpenRecentProject(project)}
-                >
-                  <div className="font-medium overflow-hidden text-ellipsis whitespace-nowrap">{project.id}</div>
-                  <div className="text-sm text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap">{project.name}</div>
-                  <div className="text-xs text-gray-500 mt-2">
-                    Last accessed: {new Date(project.lastAccessed).toLocaleDateString()}
-                  </div>
+          {/* Debug Configuration Panel */}
+          {showDebugConfig && (
+            <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
+              <h2 className="text-2xl font-bold mb-4">Debug Configuration</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Command</label>
+                  <input
+                    type="text"
+                    value={debugCommand}
+                    onChange={(e) => setDebugCommand(e.target.value)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
-              ))}
+                <div>
+                  <label className="block text-sm font-medium mb-1">Port</label>
+                  <input
+                    type="number"
+                    value={debugPort}
+                    onChange={(e) => setDebugPort(e.target.value)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <button
+                  onClick={handleDebugCommand}
+                  className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 rounded font-medium"
+                >
+                  Run Debug Command
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Open Project Card */}
+            <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
+              <h2 className="text-2xl font-bold mb-4">Open Project</h2>
+              <p className="text-gray-400 mb-4">Open an existing project from your local filesystem</p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Project Path</label>
+                  <FolderSelector
+                    value={projectPath}
+                    onChange={setProjectPath}
+                    placeholder="Select project folder"
+                  />
+                </div>
+                <button
+                  onClick={handleOpenProject}
+                  disabled={!projectPath}
+                  className={`w-full py-2 px-4 rounded font-medium ${
+                    projectPath 
+                      ? 'bg-blue-600 hover:bg-blue-700' 
+                      : 'bg-gray-700 cursor-not-allowed'
+                  }`}
+                >
+                  Open Project
+                </button>
+              </div>
+            </div>
+
+            {/* Create Project Card */}
+            <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
+              <h2 className="text-2xl font-bold mb-4">Create Project</h2>
+              <p className="text-gray-400 mb-4">Clone a project from GitHub</p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">GitHub Repository URL</label>
+                  <input
+                    type="text"
+                    value={githubUrl}
+                    onChange={(e) => setGithubUrl(e.target.value)}
+                    placeholder="https://github.com/user/repo.git"
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Storage Path</label>
+                  <FolderSelector
+                    value={clonePath}
+                    onChange={setClonePath}
+                    placeholder="Select storage folder"
+                  />
+                </div>
+                {cloneError && (
+                  <div className="text-red-400 text-sm">{cloneError}</div>
+                )}
+                <button
+                  onClick={handleCloneProject}
+                  disabled={!githubUrl || !clonePath || isCloning}
+                  className={`w-full py-2 px-4 rounded font-medium ${
+                    githubUrl && clonePath && !isCloning
+                      ? 'bg-green-600 hover:bg-green-700' 
+                      : 'bg-gray-700 cursor-not-allowed'
+                  }`}
+                >
+                  {isCloning ? 'Cloning...' : 'Clone from GitHub'}
+                </button>
+              </div>
+            </div>
+
+            {/* Default Terminal Card */}
+            <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
+              <h2 className="text-2xl font-bold mb-4">Terminal</h2>
+              <p className="text-gray-400 mb-4">Open a default terminal session</p>
+              <button
+                onClick={handleDefaultTerminal}
+                className="w-full py-2 px-4 bg-purple-600 hover:bg-purple-700 rounded font-medium"
+              >
+                Open Terminal
+              </button>
             </div>
           </div>
-        )}
+
+          {/* Recent Projects Section */}
+          {projects.length > 0 && (
+            <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
+              <h2 className="text-2xl font-bold mb-4">Recent Projects</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {projects.map((project) => (
+                  <div 
+                    key={project.id}
+                    className="bg-gray-700 rounded p-4 hover:bg-gray-600 cursor-pointer transition-colors"
+                    onClick={() => handleOpenRecentProject(project)}
+                  >
+                    <div className="font-medium overflow-hidden text-ellipsis whitespace-nowrap">{project.id}</div>
+                    <div className="text-sm text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap">{project.name}</div>
+                    <div className="text-xs text-gray-500 mt-2">
+                      Last accessed: {new Date(project.lastAccessed).toLocaleDateString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </AuthGuard>
   );
 }
