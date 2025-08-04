@@ -13,6 +13,14 @@ type GitCommit = {
   message: string;
 };
 
+type DiffLine = {
+  content: string;
+  type: 'added' | 'removed' | 'context' | 'header' | 'hunk-header';
+  lineNumber?: number;
+  oldLineNumber?: number;
+  newLineNumber?: number;
+};
+
 export default function GitTool() {
   const searchParams = useSearchParams();
   const [allFiles, setAllFiles] = useState<GitFile[]>([]);
@@ -89,6 +97,118 @@ export default function GitTool() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch git log');
       console.error('Error fetching git log:', err);
+    }
+  };
+
+  const parseDiff = (diffText: string): DiffLine[] => {
+    const lines = diffText.split('\n');
+    const result: DiffLine[] = [];
+    let oldLineNumber = 0;
+    let newLineNumber = 0;
+    
+    for (const line of lines) {
+      if (line.startsWith('diff --git') || line.startsWith('index') || line.startsWith('---') || line.startsWith('+++')) {
+        result.push({ content: line, type: 'header' });
+      } else if (line.startsWith('@@')) {
+        result.push({ content: line, type: 'hunk-header' });
+        // Reset line numbers for new hunk
+        const match = line.match(/-(\d+)(?:,(\d+))?\s+\+(\d+)(?:,(\d+))?/);
+        if (match) {
+          oldLineNumber = parseInt(match[1]);
+          newLineNumber = parseInt(match[3]);
+        }
+      } else if (line.startsWith('+')) {
+        result.push({ 
+          content: line, 
+          type: 'added', 
+          lineNumber: newLineNumber,
+          newLineNumber: newLineNumber
+        });
+        newLineNumber++;
+      } else if (line.startsWith('-')) {
+        result.push({ 
+          content: line, 
+          type: 'removed', 
+          lineNumber: oldLineNumber,
+          oldLineNumber: oldLineNumber
+        });
+        oldLineNumber++;
+      } else {
+        result.push({ 
+          content: line, 
+          type: 'context', 
+          lineNumber: oldLineNumber,
+          oldLineNumber: oldLineNumber,
+          newLineNumber: newLineNumber
+        });
+        oldLineNumber++;
+        newLineNumber++;
+      }
+    }
+    
+    return result;
+  };
+
+  const renderDiffLine = (line: DiffLine) => {
+    const { content, type, lineNumber, oldLineNumber, newLineNumber } = line;
+    
+    const baseClasses = 'flex items-center hover:bg-gray-800';
+    
+    switch (type) {
+      case 'added':
+        return (
+          <div className={`${baseClasses} bg-green-900/20`}> 
+            <span className="w-12 text-right pr-2 text-gray-500 text-xs select-none">
+              {newLineNumber}
+            </span>
+            <span className="w-8 text-center text-green-500 text-xs select-none">+</span>
+            <span className="flex-1 text-green-300">{content.substring(1)}</span>
+          </div>
+        );
+      case 'removed':
+        return (
+          <div className={`${baseClasses} bg-red-900/20`}>
+            <span className="w-12 text-right pr-2 text-gray-500 text-xs select-none">
+              {oldLineNumber}
+            </span>
+            <span className="w-8 text-center text-red-500 text-xs select-none">-</span>
+            <span className="flex-1 text-red-300 line-through">{content.substring(1)}</span>
+          </div>
+        );
+      case 'context':
+        return (
+          <div className={baseClasses}>
+            <span className="w-12 text-right pr-2 text-gray-500 text-xs select-none">
+              {lineNumber}
+            </span>
+            <span className="w-8 text-center text-gray-500 text-xs select-none"> </span>
+            <span className="flex-1 text-gray-400">{content}</span>
+          </div>
+        );
+      case 'header':
+        return (
+          <div className={`${baseClasses} bg-blue-900/30 text-blue-300 font-medium`}>
+            <span className="w-12 text-right pr-2 text-gray-500 text-xs select-none"></span>
+            <span className="w-8 text-center text-blue-500 text-xs select-none">H</span>
+            <span className="flex-1">{content}</span>
+          </div>
+        );
+      case 'hunk-header':
+        return (
+          <div className={`${baseClasses} bg-gray-800 text-yellow-300 font-medium`}>
+            <span className="w-12 text-right pr-2 text-gray-500 text-xs select-none"></span>
+            <span className="w-8 text-center text-yellow-500 text-xs select-none">@</span>
+            <span className="flex-1">{content}</span>
+          </div>
+        );
+      default:
+        return (
+          <div className={baseClasses}>
+            <span className="w-12 text-right pr-2 text-gray-500 text-xs select-none"></span>
+            <span className="w-8 text-center text-gray-500 text-xs select-none"> </span>
+            <span className="flex-1 text-gray-300">{content}</span>
+          </div>
+        );
     }
   };
 
@@ -499,7 +619,13 @@ export default function GitTool() {
                   </div>
                   <div className="flex-1 overflow-auto p-2 font-mono text-xs bg-gray-900">
                     {diff ? (
-                      <pre className="whitespace-pre">{diff}</pre>
+                      <div className="diff-container">
+                        {parseDiff(diff).map((line, index) => (
+                          <div key={index} className="diff-line">
+                            {renderDiffLine(line)}
+                          </div>
+                        ))}
+                      </div>
                     ) : (
                       <p className="text-gray-500">No changes to display</p>
                     )}

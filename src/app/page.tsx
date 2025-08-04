@@ -24,8 +24,8 @@ export default function HomePage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [debugCommand, setDebugCommand] = useState('npm run serve');
   const [debugPort, setDebugPort] = useState('3010');
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [showDebugConfig, setShowDebugConfig] = useState(false);
+  const [showDebugConfig, setShowDebugConfig] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Load projects from localStorage on component mount
   useEffect(() => {
@@ -188,23 +188,116 @@ export default function HomePage() {
     <AuthGuard>
       <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4">
         <div className="max-w-4xl w-full space-y-8">
-          <div className="text-center relative">
-            <h1 className="text-4xl font-bold mb-2">AIWebStudio</h1>
-            <p className="text-gray-400">Develop with AI assistants anywhere, anytime</p>
-            <div className="absolute top-0 right-0 flex gap-2 items-center">
-              <span className="text-sm text-gray-400">Welcome, {user?.username}</span>
-              <button
-                onClick={logout}
-                className="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-sm"
-              >
-                Logout
-              </button>
-              <a 
-                href="/debug-manager"
-                className="bg-purple-600 hover:bg-purple-700 text-white py-1 px-3 rounded text-sm"
-              >
-                Manage
-              </a>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+            <div className="text-center md:text-left mb-4 md:mb-0">
+              <h1 className="text-4xl font-bold mb-2">AIWebStudio</h1>
+              <p className="text-gray-400">Develop with AI assistants anywhere, anytime</p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 items-center sm:items-end w-full md:w-auto">
+              <div className="flex flex-col sm:flex-row gap-2 items-center w-full sm:w-auto">
+                <span className="text-sm text-gray-400 text-center sm:text-left truncate max-w-[150px] sm:max-w-[200px] md:max-w-none">
+                  Welcome, {user?.username}
+                </span>
+                <div className="flex gap-2 flex-shrink-0">
+                  <button
+                    onClick={logout}
+                    className="hidden sm:block bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-sm whitespace-nowrap"
+                  >
+                    Logout
+                  </button>
+                  <a 
+                    href="/debug-manager"
+                    className="hidden sm:block bg-purple-600 hover:bg-purple-700 text-white py-1 px-3 rounded text-sm whitespace-nowrap"
+                  >
+                    Manage
+                  </a>
+                  <button
+                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    className="sm:hidden bg-gray-700 hover:bg-gray-600 text-white py-2 px-3 rounded text-sm"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Sidebar */}
+          <div className={`fixed inset-0 z-50 sm:hidden ${mobileMenuOpen ? 'block' : 'hidden'}`}>
+            <div className={`fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-100' : 'opacity-0'}`} onClick={() => setMobileMenuOpen(false)}></div>
+            <div className={`fixed right-0 top-0 h-full w-64 bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+              <div className="p-4 border-b border-gray-700">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Menu</h3>
+                  <button
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-gray-400 hover:text-white"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div className="p-4 space-y-4">
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-gray-400">Quick Actions</h4>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleDefaultTerminal();
+                    }}
+                    className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+                  >
+                    Open Terminal
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      setShowDebugConfig(!showDebugConfig);
+                    }}
+                    className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+                  >
+                    {showDebugConfig ? 'Hide Debug' : 'Show Debug'}
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-gray-400">Account</h4>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      logout();
+                    }}
+                    className="w-full text-left px-3 py-2 bg-red-600 hover:bg-red-700 rounded text-sm"
+                  >
+                    Logout
+                  </button>
+                  <a 
+                    href="/debug-manager"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block w-full text-left px-3 py-2 bg-purple-600 hover:bg-purple-700 rounded text-sm"
+                  >
+                    Manage
+                  </a>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-gray-400">Recent Projects</h4>
+                  {projects.slice(0, 5).map((project) => (
+                    <button
+                      key={project.id}
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleOpenRecentProject(project);
+                      }}
+                      className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm truncate"
+                    >
+                      {project.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 

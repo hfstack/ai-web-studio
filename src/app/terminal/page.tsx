@@ -107,6 +107,7 @@ function TerminalContent() {
   const [projectCommand, setProjectCommand] = useState('');
   const [availableScripts, setAvailableScripts] = useState<{key: string, command: string}[]>([]);
   const [showDebugModal, setShowDebugModal] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const terminalRef = useRef<HTMLDivElement>(null);
   const terminal = useRef<Terminal | null>(null);
   const fitAddon = useRef<FitAddon | null>(null);
@@ -239,11 +240,22 @@ function TerminalContent() {
       }
     });
 
+    // Add keyboard shortcut for scrolling to bottom
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'End' && e.ctrlKey) {
+        e.preventDefault();
+        handleScrollToBottom();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
     // Cleanup listener
     return () => {
       if (dataListener) {
         dataListener.dispose();
       }
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [socket, isConnected, isTerminalInitialized]); // Add isTerminalInitialized dependency
 
@@ -669,41 +681,167 @@ function TerminalContent() {
     }
   };
 
+  const handleScrollToBottom = () => {
+    if (terminal.current) {
+      terminal.current.scrollToBottom();
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-white">
       {/* Header */}
       <header className="bg-gray-800 p-4 flex justify-between items-center">
-        <div className="flex items-center space-x-4">
-          <h1 className="text-xl font-bold">AIWebStudio</h1>
-          <span className="text-sm text-gray-400">Welcome, {user?.username}</span>
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          <h1 className="text-lg sm:text-xl font-bold">AIWebStudio</h1>
+          <span className="text-sm text-gray-400 truncate max-w-[100px] sm:max-w-none">
+            Welcome, {user?.username}
+          </span>
         </div>
         <div className="flex space-x-2">
           <button 
             onClick={handleOpenDebugModal}
-            className="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm"
+            className="hidden sm:block bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm"
           >
             Debug
           </button>
           <button 
             onClick={toggleTheme}
-            className="bg-gray-700 hover:bg-gray-600 text-white py-1 px-3 rounded text-sm"
+            className="hidden sm:block bg-gray-700 hover:bg-gray-600 text-white py-1 px-3 rounded text-sm"
           >
             Theme
           </button>
           <button 
             onClick={handleGoHome}
-            className="bg-gray-700 hover:bg-gray-600 text-white py-1 px-3 rounded text-sm"
+            className="hidden sm:block bg-gray-700 hover:bg-gray-600 text-white py-1 px-3 rounded text-sm"
           >
             Home
           </button>
           <button 
             onClick={logout}
-            className="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-sm"
+            className="hidden sm:block bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-sm"
           >
             Logout
           </button>
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="sm:hidden bg-gray-700 hover:bg-gray-600 text-white py-2 px-3 rounded text-sm"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
         </div>
       </header>
+
+      {/* Mobile Sidebar */}
+      <div className={`fixed inset-0 z-50 sm:hidden ${mobileMenuOpen ? 'block' : 'hidden'}`}>
+        <div className={`fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-100' : 'opacity-0'}`} onClick={() => setMobileMenuOpen(false)}></div>
+        <div className={`fixed right-0 top-0 h-full w-64 bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+          <div className="p-4 border-b border-gray-700">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Menu</h3>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div className="p-4 space-y-4">
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-gray-400">Quick Actions</h4>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleOpenDebugModal();
+                }}
+                className="w-full text-left px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm"
+              >
+                Debug
+              </button>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  toggleTheme();
+                }}
+                className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+              >
+                Theme
+              </button>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  openWebViewer();
+                }}
+                className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+              >
+                Open Web Page
+              </button>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  openGitTool();
+                }}
+                className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+              >
+                Git Tool
+              </button>
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-gray-400">Navigation</h4>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleGoHome();
+                }}
+                className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+              >
+                Home
+              </button>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  toggleFileExplorer();
+                }}
+                className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+              >
+                {showFileExplorer ? 'Hide Files' : 'Show Files'}
+              </button>
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-gray-400">Account</h4>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  logout();
+                }}
+                className="w-full text-left px-3 py-2 bg-red-600 hover:bg-red-700 rounded text-sm"
+              >
+                Logout
+              </button>
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-gray-400">Open Tabs ({tabs.length})</h4>
+              {tabs.slice(0, 5).map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setActiveTabId(tab.id);
+                  }}
+                  className="w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm truncate"
+                >
+                  <span className="mr-2">{tab.type === 'file' ? '📄' : tab.type === 'web' ? '🌐' : tab.type === 'console' ? '🖥️' : 'Git'}</span>
+                  {tab.title}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Debug Modal */}
       <DebugModal
@@ -727,7 +865,7 @@ function TerminalContent() {
             </div>
             <div 
               ref={terminalRef} 
-              className="flex-1 overflow-hidden p-2"
+              className="flex-1 overflow-hidden p-2 terminal-container"
             />
             <div className="border-t border-gray-700 p-2 text-xs text-gray-500 flex justify-between items-center">
               <div>
@@ -738,32 +876,40 @@ function TerminalContent() {
                   </div>
                 )}
               </div>
-              <div className="flex space-x-2">
+              <div className="flex space-x-3">
                 <button 
                   onClick={handleArrowUp}
                   disabled={!isConnected || !sessionId}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-3 py-2 rounded text-sm"
                 >
                   ↑
                 </button>
                 <button 
                   onClick={handleArrowDown}
                   disabled={!isConnected || !sessionId}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-3 py-2 rounded text-sm"
                 >
                   ↓
                 </button>
                 <button 
                   onClick={handleEnter}
                   disabled={!isConnected || !sessionId}
-                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-3 py-2 rounded text-sm"
                 >
                   ⏎
                 </button>
                 <button 
+                  onClick={handleScrollToBottom}
+                  disabled={!isConnected || !sessionId}
+                  className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white px-3 py-2 rounded text-sm"
+                  title="Scroll to bottom"
+                >
+                  ↓↓
+                </button>
+                <button 
                   onClick={handleCtrlC}
                   disabled={!isConnected || !sessionId}
-                  className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                  className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-3 py-2 rounded text-sm"
                 >
                   ⌃C
                 </button>
@@ -945,7 +1091,7 @@ function TerminalContent() {
             </div>
             <div 
               ref={terminalRef} 
-              className="flex-1 overflow-hidden p-2"
+              className="flex-1 overflow-hidden p-2 terminal-container"
             />
             <div className="border-t border-gray-700 p-2 text-xs text-gray-500 flex justify-between items-center">
               <div>
@@ -956,39 +1102,40 @@ function TerminalContent() {
                   </div>
                 )}
               </div>
-              <div className="flex space-x-2">
+              <div className="flex space-x-3">
                 <button 
                   onClick={handleArrowUp}
                   disabled={!isConnected || !sessionId}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-3 py-2 rounded text-sm"
                 >
                   ↑
                 </button>
                 <button 
                   onClick={handleArrowDown}
                   disabled={!isConnected || !sessionId}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-3 py-2 rounded text-sm"
                 >
                   ↓
                 </button>
                 <button 
                   onClick={handleEnter}
                   disabled={!isConnected || !sessionId}
-                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-3 py-2 rounded text-sm"
                 >
                   ⏎
                 </button>
                 <button 
-                  onClick={handleEnter}
+                  onClick={handleScrollToBottom}
                   disabled={!isConnected || !sessionId}
-                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                  className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white px-3 py-2 rounded text-sm"
+                  title="Ctrl+End to scroll to bottom"
                 >
-                  ⏎
+                  ↓↓
                 </button>
                 <button 
                   onClick={handleCtrlC}
                   disabled={!isConnected || !sessionId}
-                  className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                  className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-3 py-2 rounded text-sm"
                 >
                   ⌃C
                 </button>
