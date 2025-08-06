@@ -37,19 +37,9 @@ function cleanupZombieProcesses() {
   console.log(`Cleaned up ${deletedCount} expired processes from database`);
 }
 
-// 获取Socket.IO服务器实例（简化版本）
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const getSocketServer = (req: NextRequest): ServerIO | null => {
-  // 尝试从全局变量获取
-  const globalSocket = (global as unknown as { socketIO?: ServerIO }).socketIO;
-  return globalSocket || null;
-};
-
 export async function POST(request: NextRequest) {
   try {
     // 尝试获取Socket.IO服务器
-    const socketServer = getSocketServer(request);
-    console.log('Socket.IO server available:', !!socketServer);
     
     const { command, port, path, timeout } = await request.json();
     
@@ -143,12 +133,10 @@ export async function POST(request: NextRequest) {
       process: bashProcess,
       timer,
       startTime,
-      socket: socketServer, // 直接设置socket服务器
       outputBuffer: [] // Buffer to store output until socket is connected
     });
     
     console.log(`Process added to map for port ${port}, total processes in map:`, processMap.size);
-    console.log(`Socket server set for port ${port}:`, !!socketServer);
     
     // 保存进程信息到数据库
     saveProcess(port, command, path, bashProcess.pid, startTime, processTimeout);
@@ -169,19 +157,10 @@ export async function POST(request: NextRequest) {
           timestamp: new Date().toISOString()
         });
         
-        if (processInfo.socket) {
-          console.log('Sending data to socket for port:', port);
-          // 直接发送到房间
-          processInfo.socket.to(`debug-${port}`).emit('debug-output', {
-            port,
-            data,
-            timestamp: new Date().toISOString()
-          });
-        } else {
-          console.log('Socket not connected, buffering output for port:', port);
-          // Buffer the output until socket is connected
-          processInfo.outputBuffer.push(data);
-        }
+        processInfo.outputBuffer.push(data);
+
+        console.log(messageQueue.get(port)!.length );
+
       }
     });
     
@@ -203,14 +182,6 @@ export async function POST(request: NextRequest) {
             messageQueue.set(port, []);
           }
           messageQueue.get(port)!.push(exitMessage);
-          
-          // 发送退出消息到socket（如果可用）
-          if (processInfo.socket) {
-            processInfo.socket.to(`debug-${port}`).emit('debug-exit', {
-              port,
-              timestamp: new Date().toISOString()
-            });
-          }
           
           // 只有当退出的进程是当前映射表中的进程时才删除数据库记录
           if (processInfo.process === bashProcess) {

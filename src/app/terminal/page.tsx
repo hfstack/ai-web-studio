@@ -499,6 +499,9 @@ function TerminalContent() {
         setTabs(prev => [...prev, webTab, consoleTab]);
         setActiveTabId(consoleTab.id);
         setShowDebugModal(false); // Close modal after successful run
+        if (isMobile) {
+         setIsIdeCollapsed(false);
+        }
       } else {
         console.error('Failed to run debug command:', data.error);
       }
