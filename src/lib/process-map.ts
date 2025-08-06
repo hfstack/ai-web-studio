@@ -11,4 +11,4 @@ export interface ProcessInfo {
 export const processMap: Map<number, ProcessInfo> = new Map();
 
 // 全局消息队列，用于存储待发送的消息
-export const messageQueue: Map<number, Array<{data: string, timestamp: string}>> = new Map();
+export const messageQueue: Map<string, Array<{data: string, timestamp: string}>> = new Map();
