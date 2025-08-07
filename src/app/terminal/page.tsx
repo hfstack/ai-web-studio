@@ -269,8 +269,10 @@ function TerminalContent() {
       path: '/api/socket',
       transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 20, // Increased from 5 to 20
       reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000, // Max 5 seconds between attempts
+      timeout: 30000, // 30 seconds connection timeout
     });
 
     newSocket.on('connect', () => {
@@ -278,11 +280,20 @@ function TerminalContent() {
       setIsConnected(true);
       setConnectionError(null);
 
-      // Create terminal session through Socket.IO
-      newSocket.emit('create-terminal-session', {
-        projectId: searchParams.get('projectId'),
-        path: searchParams.get('path') || '/' // 使用URL中的path参数，如果没有则默认为根目录
-      });
+      // Try to restore existing session first, otherwise create new one
+      if (sessionId) {
+        console.log('Attempting to restore session:', sessionId);
+        newSocket.emit('restore-terminal-session', {
+          projectId: searchParams.get('projectId'),
+          sessionId: sessionId
+        });
+      } else {
+        // Create terminal session through Socket.IO
+        newSocket.emit('create-terminal-session', {
+          projectId: searchParams.get('projectId'),
+          path: searchParams.get('path') || '/' // 使用URL中的path参数，如果没有则默认为根目录
+        });
+      }
     });
 
     newSocket.on('connect_error', (err) => {
@@ -319,6 +330,22 @@ function TerminalContent() {
         setConnectionError(data.error);
       }
     });
+
+    // Handle terminal session restore response
+    newSocket.on('terminal-session-restored', (data) => {
+      if (data.success) {
+        console.log('Terminal session restored:', data.sessionId);
+        // Session ID remains the same, just update connection state
+      } else {
+        console.log('Session restore failed, creating new session:', data.error);
+        // If restore fails, create a new session
+        setSessionId(null);
+        newSocket.emit('create-terminal-session', {
+          projectId: searchParams.get('projectId'),
+          path: searchParams.get('path') || '/'
+        });
+      }
+    });
     
     // Handle session errors
     newSocket.on('session-error', (data) => {
@@ -327,11 +354,26 @@ function TerminalContent() {
       // Reset session so it can be recreated
       setSessionId(null);
     });
+
+    // Handle heartbeat acknowledgment
+    newSocket.on('terminal-heartbeat-ack', (data) => {
+      console.log('Heartbeat acknowledged:', data.timestamp);
+    });
     
     setSocket(newSocket);
     
+    // Start heartbeat mechanism
+    const heartbeatInterval = setInterval(() => {
+      if (newSocket.connected && sessionId) {
+        newSocket.emit('terminal-heartbeat', { sessionId });
+      }
+    }, 30000); // Send heartbeat every 30 seconds
+    
     // Return cleanup function
     return () => {
+      // Clean up heartbeat interval
+      clearInterval(heartbeatInterval);
+      
       // Clean up only when component unmounts
       if (newSocket) {
         const currentProjectId = searchParams.get('projectId');
@@ -346,7 +388,9 @@ function TerminalContent() {
         newSocket.off('disconnect');
         newSocket.off('terminal-output');
         newSocket.off('terminal-session-created');
+        newSocket.off('terminal-session-restored');
         newSocket.off('session-error');
+        newSocket.off('terminal-heartbeat-ack');
 
         // Close the socket
         newSocket.close();

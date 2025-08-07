@@ -82,6 +82,60 @@ app.prepare().then(() => {
         });
       }
     });
+
+    // Handle session restore for reconnection
+    socket.on('restore-terminal-session', (data) => {
+      try {
+        const { projectId, sessionId } = data;
+        
+        // Check if the session exists and is persistent
+        const session = terminalServer.getSession(sessionId);
+        if (session && session.projectId === projectId) {
+          // Update activity and remap to new socket
+          terminalServer.updateSessionActivity(sessionId);
+          socketToSessionMap.set(socket.id, sessionId);
+          
+          // Set up data listener for the restored session
+          let lastData = '';
+          session.process.onData((data) => {
+            if (lastData && data.includes(lastData)) {
+              const newData = data.replace(lastData, '');
+              if (newData) {
+                socket.emit('terminal-output', newData);
+              }
+            } else {
+              socket.emit('terminal-output', data);
+            }
+            lastData = data;
+          });
+          
+          socket.emit('terminal-session-restored', { 
+            success: true, 
+            sessionId 
+          });
+        } else {
+          socket.emit('terminal-session-restored', { 
+            success: false, 
+            error: 'Session not found or expired'
+          });
+        }
+      } catch (error) {
+        console.error('Error restoring terminal session:', error);
+        socket.emit('terminal-session-restored', { 
+          success: false, 
+          error: 'Failed to restore terminal session: ' + (error as Error).message
+        });
+      }
+    });
+
+    // Handle heartbeat
+    socket.on('terminal-heartbeat', (data) => {
+      const { sessionId } = data;
+      if (sessionId) {
+        terminalServer.updateSessionActivity(sessionId);
+      }
+      socket.emit('terminal-heartbeat-ack', { timestamp: Date.now() });
+    });
     
     // Handle terminal input
     socket.on('terminal-input', (data) => {
@@ -105,7 +159,7 @@ app.prepare().then(() => {
     socket.on('cleanup-session', (data) => {
       const { sessionId } = data;
       if (sessionId) {
-        terminalServer.destroySession(sessionId);
+        terminalServer.forceDestroySession(sessionId);
         // Clean up the mapping
         for (const [sockId, sessId] of socketToSessionMap.entries()) {
           if (sessId === sessionId) {
@@ -118,12 +172,9 @@ app.prepare().then(() => {
     
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id);
-      // Clean up terminal session when client disconnects
-      const sessionId = socketToSessionMap.get(socket.id);
-      if (sessionId) {
-        terminalServer.destroySession(sessionId);
-        socketToSessionMap.delete(socket.id);
-      }
+      // Don't immediately destroy session - keep it for potential reconnection
+      // Just remove the socket mapping, session will be cleaned up by inactivity timeout
+      socketToSessionMap.delete(socket.id);
     });
   });
 
